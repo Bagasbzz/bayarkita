@@ -1,0 +1,4 @@
+.vscode/
+_ref/
+*.zip
+__pycache__/
