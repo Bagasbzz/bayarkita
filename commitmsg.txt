@@ -1,0 +1,11 @@
+Lower service fees by 10% and set USD rate to 18,600
+
+- Fee: 10% discount applied to all tiers (IDR 25k+5% -> 22.5k+4.5%;
+  USD 35k+1% -> 31.5k+0.9%; min fee 22.500)
+- USD rate: 18,600 IDR
+- Recalculate cost summary on page load so pre-rendered numbers match
+- Restore tab presets (data-amount/data-currency/data-custom) on all
+  service pages; switching tabs now also sets the currency
+- Enable/disable "Pesan Sekarang" based on minimum amount
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

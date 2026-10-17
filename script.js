@@ -173,7 +173,8 @@
   // Service detail: order calculator + checkout popup (UI only, no backend)
   var orderCard = document.querySelector(".service-order-card");
   if (orderCard) {
-    var USD_RATE = 19114.6; // IDR per USD, snapshot of the reference at build time
+    var USD_RATE = 18600; // IDR per USD
+    var FEE_DISCOUNT = 0.9; // fee 10% lebih murah dari acuan
     var tabs = Array.prototype.slice.call(orderCard.querySelectorAll(".service-option-grid button"));
     var currencySel = orderCard.querySelector(".service-order-fields select");
     var amountInput = orderCard.querySelector(".service-order-fields input");
@@ -192,10 +193,11 @@
     };
     // Fee tiers mirror the amounts observed on the reference site.
     var feeFor = function (amount, cur) {
-      if (cur === "IDR") return 25000 + amount * 0.05;
-      var idr = amount * USD_RATE;
-      if (amount < 3) return 25000;
-      return 35000 + idr * 0.01;
+      var base;
+      if (cur === "IDR") base = 25000 + amount * 0.05;
+      else if (amount < 3) base = 25000;
+      else base = 35000 + amount * USD_RATE * 0.01;
+      return base * FEE_DISCOUNT;
     };
     var state = { amount: 0, currency: "IDR", plan: "" };
     var recalc = function () {
@@ -208,6 +210,14 @@
       if (costStrong[1]) costStrong[1].textContent = fmtRp(fee);
       if (costStrong[2]) costStrong[2].textContent = fmtRp(total);
       if (amountLabel) amountLabel.firstChild.textContent = "Jumlah " + cur;
+      if (orderBtn) {
+        var min = cur === "IDR" ? 20000 : 1;
+        var ok = amount >= min;
+        orderBtn.classList.toggle("is-disabled", !ok);
+        orderBtn.setAttribute("aria-disabled", String(!ok));
+        if (ok) orderBtn.removeAttribute("tabindex"); else orderBtn.setAttribute("tabindex", "-1");
+        if (amountInput) amountInput.min = String(min);
+      }
     };
     tabs.forEach(function (tab) {
       tab.addEventListener("click", function () {
@@ -218,6 +228,7 @@
         amountInput.disabled = !custom;
         if (currencySel) currencySel.disabled = !custom;
         amountInput.value = tab.getAttribute("data-amount") || "0";
+        if (currencySel && tab.getAttribute("data-currency")) currencySel.value = tab.getAttribute("data-currency");
         state.plan = tab.textContent.trim();
         recalc();
       });
@@ -226,6 +237,7 @@
     state.plan = activeTab ? activeTab.textContent.trim() : "";
     if (amountInput) amountInput.addEventListener("input", recalc);
     if (currencySel) currencySel.addEventListener("change", recalc);
+    recalc(); // replace pre-rendered numbers with the current fee/rate
 
     // Checkout popup — same markup as the reference, submission is UI-only.
     var ICON_X = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
@@ -279,6 +291,8 @@
       var first = overlay.querySelector("input");
       if (first) first.focus();
     };
-    if (orderBtn) orderBtn.addEventListener("click", openCheckout);
+    if (orderBtn) orderBtn.addEventListener("click", function () {
+      if (!orderBtn.classList.contains("is-disabled")) openCheckout();
+    });
   }
 })();
