@@ -174,7 +174,12 @@
   var orderCard = document.querySelector(".service-order-card");
   if (orderCard) {
     var USD_RATE = 18600; // IDR per USD
-    var FEE_DISCOUNT = 0.9; // fee 10% lebih murah dari acuan
+    // Fee = biaya pokok (20% lebih murah dari acuan) + persentase nominal.
+    var feeFor = function (amount, cur) {
+      if (cur === "IDR") return 20000 + amount * 0.045;
+      if (amount < 3) return 20000;
+      return 28000 + amount * USD_RATE * 0.01;
+    };
     var tabs = Array.prototype.slice.call(orderCard.querySelectorAll(".service-option-grid button"));
     var currencySel = orderCard.querySelector(".service-order-fields select");
     var amountInput = orderCard.querySelector(".service-order-fields input");
@@ -190,14 +195,6 @@
       if (cur === "IDR") return "IDR\u00a0" + Math.round(n).toLocaleString("en-US");
       var sym = cur === "EUR" ? "\u20ac" : "$";
       return sym + n.toLocaleString("en-US", { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 });
-    };
-    // Fee tiers mirror the amounts observed on the reference site.
-    var feeFor = function (amount, cur) {
-      var base;
-      if (cur === "IDR") base = 25000 + amount * 0.05;
-      else if (amount < 3) base = 25000;
-      else base = 35000 + amount * USD_RATE * 0.01;
-      return base * FEE_DISCOUNT;
     };
     var state = { amount: 0, currency: "IDR", plan: "" };
     var recalc = function () {
