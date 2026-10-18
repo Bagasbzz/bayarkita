@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin Dashboard - Fahmidev</title>
+<link rel="icon" href="../assets/logo-fahmidev.svg">
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-body">
+
+<!-- Login -->
+<section class="admin-login" id="login" hidden>
+  <form class="admin-login-card" id="login-form" novalidate>
+    <span class="admin-login-logo"><img src="../assets/logo-fahmidev.svg" alt="Fahmidev"></span>
+    <h1>Masuk Admin</h1>
+    <p>Dashboard pengelolaan chat, pesanan, dan pengaturan Fahmidev.</p>
+    <label>Username<span class="checkout-input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg><input name="username" autocomplete="username" placeholder="Username" required></span></label>
+    <label>Password<span class="checkout-input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><input name="password" type="password" autocomplete="current-password" placeholder="Password" required></span></label>
+    <p class="checkout-error" id="login-error" hidden></p>
+    <button class="admin-btn admin-btn-primary" type="submit"><span>Masuk</span></button>
+  </form>
+</section>
+
+<!-- App -->
+<div class="admin-app" id="app" hidden>
+  <aside class="admin-sidebar" id="sidebar">
+    <a class="admin-brand" href="../index.html" target="_blank" rel="noreferrer"><img src="../assets/logo-fahmidev.svg" alt=""><span>Fahmidev <small>Admin</small></span></a>
+    <nav class="admin-nav">
+      <a href="#dashboard" data-view="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Dashboard</a>
+      <a href="#inbox" data-view="inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Chat<span class="admin-nav-badge" id="badge-inbox" hidden>0</span></a>
+      <a href="#orders" data-view="orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10a4 4 0 0 1-8 0"/><path d="M3.103 6.034h17.794"/><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"/></svg>Pesanan<span class="admin-nav-badge" id="badge-orders" hidden>0</span></a>
+      <a href="#services" data-view="services"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></svg>Layanan</a>
+      <a href="#settings" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Pengaturan</a>
+    </nav>
+    <div class="admin-sidebar-foot">
+      <span class="admin-user"><b id="admin-name">admin</b><small>Administrator</small></span>
+      <button class="admin-icon-btn" id="logout" type="button" title="Keluar" aria-label="Keluar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></button>
+    </div>
+  </aside>
+  <div class="admin-sidebar-backdrop" id="sidebar-backdrop"></div>
+
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <button class="admin-icon-btn admin-menu-btn" id="menu-btn" type="button" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg></button>
+      <h1 id="view-title">Dashboard</h1>
+      <div class="admin-topbar-actions">
+        <button class="admin-icon-btn" id="sound-btn" type="button" title="Suara notifikasi" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/></svg></button>
+        <a class="admin-btn admin-btn-ghost" href="../index.html" target="_blank" rel="noreferrer">Lihat situs</a>
+      </div>
+    </header>
+
+    <!-- Dashboard -->
+    <section class="admin-view" data-view="dashboard">
+      <div class="admin-stats" id="stats"></div>
+      <div class="admin-grid-2">
+        <article class="admin-card"><div class="admin-card-head"><h2>Omzet 14 Hari Terakhir</h2><small>Pesanan diproses &amp; selesai</small></div><div class="admin-chart" id="chart"></div></article>
+        <article class="admin-card"><div class="admin-card-head"><h2>Layanan Terlaris</h2></div><div class="admin-top" id="top-services"></div></article>
+      </div>
+      <article class="admin-card"><div class="admin-card-head"><h2>Pesanan Terbaru</h2><a href="#orders" class="admin-link">Lihat semua</a></div><div class="admin-table-wrap"><table class="admin-table" id="recent-orders"></table></div></article>
+    </section>
+
+    <!-- Inbox -->
+    <section class="admin-view admin-inbox" data-view="inbox" hidden>
+      <aside class="admin-conv-list">
+        <div class="admin-conv-tools">
+          <span class="checkout-input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="conv-search" placeholder="Cari nama / nomor / pesan"></span>
+          <div class="admin-chips" id="conv-filter"><button class="is-active" data-filter="all" type="button">Semua</button><button data-filter="unread" type="button">Belum dibaca</button><button data-filter="open" type="button">Aktif</button><button data-filter="closed" type="button">Selesai</button></div>
+        </div>
+        <div class="admin-conv-items" id="conv-items"></div>
+      </aside>
+      <section class="admin-thread" id="thread">
+        <div class="admin-thread-empty" id="thread-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/></svg><p>Pilih percakapan untuk mulai membalas.</p></div>
+        <div class="admin-thread-body" id="thread-body" hidden>
+          <header class="admin-thread-head">
+            <button class="admin-icon-btn admin-thread-back" id="thread-back" type="button" aria-label="Kembali"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+            <span class="admin-avatar" id="thread-avatar">A</span>
+            <div class="admin-thread-title"><strong id="thread-name"></strong><a id="thread-phone" href="#" target="_blank" rel="noreferrer"></a></div>
+            <div class="admin-thread-actions">
+              <button class="admin-btn admin-btn-ghost admin-btn-sm" id="thread-orders-btn" type="button">Pesanan <b id="thread-order-count">0</b></button>
+              <button class="admin-btn admin-btn-ghost admin-btn-sm" id="thread-toggle-status" type="button">Tandai selesai</button>
+              <button class="admin-icon-btn" id="thread-delete" type="button" title="Hapus percakapan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
+            </div>
+          </header>
+          <div class="admin-thread-orders" id="thread-orders" hidden></div>
+          <div class="admin-thread-messages" id="thread-messages"></div>
+          <form class="admin-thread-compose" id="thread-compose">
+            <div class="admin-quick" id="quick-replies"></div>
+            <div class="webchat-compose"><textarea rows="1" placeholder="Tulis balasan... (Enter untuk kirim, Shift+Enter baris baru)"></textarea><button class="webchat-send" type="submit" aria-label="Kirim" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg></button></div>
+          </form>
+        </div>
+      </section>
+    </section>
+
+    <!-- Orders -->
+    <section class="admin-view" data-view="orders" hidden>
+      <div class="admin-toolbar">
+        <span class="checkout-input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="order-search" placeholder="Cari kode / nama / nomor / layanan"></span>
+        <div class="admin-chips" id="order-filter"><button class="is-active" data-status="" type="button">Semua</button><button data-status="baru" type="button">Baru</button><button data-status="diproses" type="button">Diproses</button><button data-status="selesai" type="button">Selesai</button><button data-status="batal" type="button">Batal</button></div>
+        <a class="admin-btn admin-btn-ghost" id="export-btn" href="../api/admin.php?action=export_orders">Export CSV</a>
+      </div>
+      <article class="admin-card"><div class="admin-table-wrap"><table class="admin-table" id="orders-table"></table></div><div class="admin-pagination" id="orders-pager"></div></article>
+    </section>
+
+    <!-- Services -->
+    <section class="admin-view" data-view="services" hidden>
+      <div class="admin-toolbar"><p class="admin-hint">Layanan yang aktif akan tampil di <code>/api/settings.php?services=1</code>. Urutkan dengan tombol panah.</p><button class="admin-btn admin-btn-primary" id="service-add" type="button">+ Tambah layanan</button></div>
+      <div class="admin-services" id="services-list"></div>
+    </section>
+
+    <!-- Settings -->
+    <section class="admin-view" data-view="settings" hidden>
+      <div class="admin-grid-2">
+        <form class="admin-card admin-form" id="fee-form">
+          <div class="admin-card-head"><h2>Fee &amp; Minimum Pesanan</h2><small>Dipakai kalkulator di halaman layanan</small></div>
+          <div class="admin-form-grid">
+            <label>Fee pokok IDR (Rp)<input name="fee_idr_base" type="number" step="1" min="0"></label>
+            <label>Persentase IDR (%)<input name="fee_idr_pct" type="number" step="0.01" min="0"></label>
+            <label>Fee pokok valas (Rp)<input name="fee_usd_base" type="number" step="1" min="0"></label>
+            <label>Persentase valas (%)<input name="fee_usd_pct" type="number" step="0.01" min="0"></label>
+            <label>Fee minimum valas (Rp)<input name="fee_usd_min" type="number" step="1" min="0"></label>
+            <label>Batas fee minimum (USD &lt;)<input name="fee_usd_min_threshold" type="number" step="0.01" min="0"></label>
+            <label>Minimum pesanan IDR<input name="min_order_idr" type="number" step="1" min="0"></label>
+            <label>Minimum pesanan USD<input name="min_order_usd" type="number" step="0.01" min="0"></label>
+          </div>
+          <div class="admin-preview" id="fee-preview"></div>
+          <button class="admin-btn admin-btn-primary" type="submit">Simpan</button>
+        </form>
+        <form class="admin-card admin-form" id="rate-form">
+          <div class="admin-card-head"><h2>Kurs (Rp per 1 unit)</h2><small>Tambah mata uang baru dengan kode 3 huruf</small></div>
+          <div class="admin-form-grid" id="rate-fields"></div>
+          <div class="admin-rate-add"><input id="rate-new-code" placeholder="Kode (mis. SGD)" maxlength="3"><input id="rate-new-val" type="number" step="0.01" placeholder="Kurs"><button class="admin-btn admin-btn-ghost" id="rate-add" type="button">Tambah</button></div>
+          <button class="admin-btn admin-btn-primary" type="submit">Simpan</button>
+        </form>
+        <form class="admin-card admin-form" id="chat-form">
+          <div class="admin-card-head"><h2>Chat &amp; Kontak</h2></div>
+          <label>Nomor WhatsApp (628…)<input name="wa_number"></label>
+          <label>Username Telegram<input name="telegram"></label>
+          <label>Sapaan awal chat<textarea name="chat_greeting" rows="2"></textarea></label>
+          <label>Balasan otomatis setelah pesanan<textarea name="order_auto_reply" rows="3"></textarea></label>
+          <label>Catatan saat admin offline<textarea name="chat_offline_note" rows="2"></textarea></label>
+          <label>Balasan cepat (satu per baris)<textarea name="quick_replies" rows="4"></textarea></label>
+          <button class="admin-btn admin-btn-primary" type="submit">Simpan</button>
+        </form>
+        <form class="admin-card admin-form" id="password-form">
+          <div class="admin-card-head"><h2>Akun Admin</h2></div>
+          <label>Username<input name="username" autocomplete="username"></label>
+          <label>Password lama<input name="old_password" type="password" autocomplete="current-password" required></label>
+          <label>Password baru (min. 8, kosongkan jika tidak diganti)<input name="new_password" type="password" autocomplete="new-password"></label>
+          <button class="admin-btn admin-btn-primary" type="submit">Perbarui akun</button>
+        </form>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Modal generik -->
+<div class="checkout-modal-overlay admin-modal" id="modal" hidden><section class="checkout-modal admin-modal-card" role="dialog" aria-modal="true"><button class="checkout-modal-close" id="modal-close" type="button" aria-label="Tutup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button><div id="modal-body"></div></section></div>
+<div class="admin-toast" id="toast" hidden></div>
+
+<script src="admin.js" defer></script>
+</body>
+</html>

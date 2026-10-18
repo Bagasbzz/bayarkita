@@ -1,0 +1,11 @@
+---
+# Deploy otomatis cPanel (Git Version Control -> Deploy HEAD Commit).
+# Ganti USER dengan username cPanel. config.php & folder data tidak ikut (ada di .gitignore).
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/USER/public_html
+    - /bin/mkdir -p $DEPLOYPATH/api/data
+    - /bin/cp -R admin api assets jasa-pembayaran $DEPLOYPATH/
+    - /bin/cp *.html *.css *.js .htaccess $DEPLOYPATH/
+    - /bin/cp -n api/config.sample.php $DEPLOYPATH/api/config.php || true
+    - /bin/chmod 750 $DEPLOYPATH/api/data

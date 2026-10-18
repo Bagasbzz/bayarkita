@@ -170,15 +170,23 @@
     });
   }
 
-  // Service detail: order calculator + checkout popup (UI only, no backend)
+  // Service detail: order calculator + checkout popup (pesanan dikirim ke api/orders.php)
   var orderCard = document.querySelector(".service-order-card");
   if (orderCard) {
-    var USD_RATE = 18600; // IDR per USD
-    // Fee = biaya pokok (20% lebih murah dari acuan) + persentase nominal.
+    var API_BASE = (function () {
+      var s = document.querySelector('script[src$="script.js"]');
+      return s ? s.getAttribute("src").replace(/script\.js(\?.*)?$/, "") + "api/" : "api/";
+    })();
+    // Nilai default = sama dengan setting server; akan ditimpa oleh api/settings.php bila tersedia.
+    var FEE = { idr_base: 20000, idr_pct: 4.5, usd_min: 20000, usd_min_threshold: 3, usd_base: 28000, usd_pct: 1 };
+    var RATES = { USD: 18600, EUR: 21500, GBP: 24800, JPY: 125, CNY: 2600, THB: 570, MYR: 4400 };
+    var MIN_ORDER = { IDR: 20000, USD: 1 };
+    var rateFor = function (cur) { return cur === "IDR" ? 1 : (RATES[cur] || RATES.USD); };
     var feeFor = function (amount, cur) {
-      if (cur === "IDR") return 20000 + amount * 0.045;
-      if (amount < 3) return 20000;
-      return 28000 + amount * USD_RATE * 0.01;
+      if (cur === "IDR") return FEE.idr_base + amount * FEE.idr_pct / 100;
+      var idr = amount * rateFor(cur);
+      if (idr / RATES.USD < FEE.usd_min_threshold) return FEE.usd_min;
+      return FEE.usd_base + idr * FEE.usd_pct / 100;
     };
     var tabs = Array.prototype.slice.call(orderCard.querySelectorAll(".service-option-grid button"));
     var currencySel = orderCard.querySelector(".service-order-fields select");
@@ -189,6 +197,7 @@
     var brandImg = orderCard.querySelector(".service-order-brand-icon img");
     var serviceName = (document.querySelector(".service-summary-brand h1") || {}).textContent || "";
     serviceName = serviceName.replace(/^Jasa Pembayaran\s+/i, "").trim();
+    var serviceSlug = (location.pathname.split("/").pop() || "").replace(/\.html$/, "");
 
     var fmtRp = function (n) { return "Rp " + Math.round(n).toLocaleString("id-ID"); };
     var fmtPrice = function (n, cur) {
@@ -201,14 +210,14 @@
       var cur = currencySel ? currencySel.value : "IDR";
       var amount = parseFloat(amountInput.value) || 0;
       var fee = feeFor(amount, cur);
-      var total = (cur === "IDR" ? amount : amount * USD_RATE) + fee;
+      var total = amount * rateFor(cur) + fee;
       state = { amount: amount, currency: cur, fee: fee, total: total, plan: state.plan };
       if (costStrong[0]) costStrong[0].textContent = fmtPrice(amount, cur);
       if (costStrong[1]) costStrong[1].textContent = fmtRp(fee);
       if (costStrong[2]) costStrong[2].textContent = fmtRp(total);
       if (amountLabel) amountLabel.firstChild.textContent = "Jumlah " + cur;
       if (orderBtn) {
-        var min = cur === "IDR" ? 20000 : 1;
+        var min = cur === "IDR" ? MIN_ORDER.IDR : MIN_ORDER.USD;
         var ok = amount >= min;
         orderBtn.classList.toggle("is-disabled", !ok);
         orderBtn.setAttribute("aria-disabled", String(!ok));
@@ -235,6 +244,14 @@
     if (amountInput) amountInput.addEventListener("input", recalc);
     if (currencySel) currencySel.addEventListener("change", recalc);
     recalc(); // replace pre-rendered numbers with the current fee/rate
+    // Ambil fee & kurs terbaru dari pengaturan admin (fallback ke nilai default di atas).
+    fetch(API_BASE + "settings.php", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (r) {
+      if (!r || !r.ok) return;
+      if (r.fee) FEE = r.fee;
+      if (r.rates) Object.keys(r.rates).forEach(function (k) { RATES[k] = r.rates[k]; });
+      if (r.min_order) MIN_ORDER = r.min_order;
+      recalc();
+    }).catch(function () {});
 
     // Checkout popup — same markup as the reference, submission is UI-only.
     var ICON_X = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
@@ -242,7 +259,8 @@
     var ICON_USER = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>';
     var ICON_CHAT = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/></svg>';
     var openCheckout = function () {
-      var priceIdr = state.currency === "IDR" ? state.amount : state.amount * USD_RATE;
+      var priceIdr = state.amount * rateFor(state.currency);
+      var saved = window.FdvChat && window.FdvChat.getSession();
       var overlay = document.createElement("div");
       overlay.className = "checkout-modal-overlay";
       overlay.setAttribute("role", "presentation");
@@ -254,8 +272,8 @@
         '</span></span><div class="checkout-product-copy"><h2 id="checkout-title"></h2><p></p><strong></strong></div></div>' +
         '<div class="checkout-total-card"><span>Total Pembayaran</span><strong></strong>' + ICON_SHIELD + "</div>" +
         '<form class="checkout-form" novalidate>' +
-        '<label>Nama<span class="checkout-input-wrap">' + ICON_USER + '<input autocomplete="name" placeholder="Masukkan nama lengkap Anda" value=""></span></label>' +
-        '<label>No WhatsApp<span class="checkout-input-wrap">' + ICON_CHAT + '<input autocomplete="tel" inputmode="tel" placeholder="Contoh: 0812 3456 7890" value=""></span></label>' +
+        '<label>Nama<span class="checkout-input-wrap">' + ICON_USER + '<input autocomplete="name" placeholder="Masukkan nama lengkap Anda" value="' + (saved && saved.name ? saved.name.replace(/"/g, "&quot;") : "") + '"></span></label>' +
+        '<label>No WhatsApp<span class="checkout-input-wrap">' + ICON_CHAT + '<input autocomplete="tel" inputmode="tel" placeholder="Contoh: 0812 3456 7890" value="' + (saved && saved.phone ? saved.phone : "") + '"></span></label>' +
         '<div class="checkout-actions"><button class="checkout-cancel-button" type="button">Batal</button>' +
         '<button class="checkout-submit-button" type="submit"><span>Lanjutkan</span></button></div></form></section>';
       overlay.querySelector("#checkout-title").textContent = serviceName;
@@ -274,15 +292,36 @@
         var inputs = form.querySelectorAll("input");
         var old = form.querySelector(".checkout-error");
         if (old) old.remove();
-        var msg = document.createElement("p");
-        msg.className = "checkout-error";
-        if (!inputs[0].value.trim() || !inputs[1].value.trim()) {
-          msg.textContent = "Nama dan nomor WhatsApp wajib diisi.";
-        } else {
-          // No backend in this replica: the reference submits the order to its API here.
-          msg.textContent = "Pemrosesan pesanan belum terhubung pada versi ini. Silakan hubungi admin via WhatsApp.";
-        }
-        form.insertBefore(msg, form.querySelector(".checkout-actions"));
+        var showErr = function (text) {
+          var msg = document.createElement("p");
+          msg.className = "checkout-error";
+          msg.textContent = text;
+          form.insertBefore(msg, form.querySelector(".checkout-actions"));
+        };
+        var name = inputs[0].value.trim(), phone = inputs[1].value.trim();
+        if (!name || !phone) return showErr("Nama dan nomor WhatsApp wajib diisi.");
+        var submitBtn = form.querySelector(".checkout-submit-button");
+        submitBtn.disabled = true;
+        submitBtn.firstChild.textContent = "Memproses...";
+        var session = window.FdvChat && window.FdvChat.getSession();
+        fetch(API_BASE + "orders.php", {
+          method: "POST", credentials: "same-origin",
+          headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
+          body: JSON.stringify({
+            name: name, phone: phone, token: session ? session.token : "",
+            service_slug: serviceSlug, service_name: serviceName, plan: state.plan,
+            amount: state.amount, currency: state.currency
+          })
+        }).then(function (r) { return r.json(); }).then(function (r) {
+          if (!r || !r.ok) throw new Error((r && r.error) || "Gagal mengirim pesanan.");
+          close();
+          // Konfirmasi pesanan masuk ke chat web; buka panel chat-nya.
+          if (window.FdvChat) window.FdvChat.openWithSession({ token: r.token, name: name, phone: phone });
+        }).catch(function (err) {
+          submitBtn.disabled = false;
+          submitBtn.firstChild.textContent = "Lanjutkan";
+          showErr(err.message === "Failed to fetch" ? "Tidak dapat terhubung ke server. Coba lagi." : err.message);
+        });
       });
       document.body.appendChild(overlay);
       var first = overlay.querySelector("input");

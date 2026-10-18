@@ -1,0 +1,89 @@
+/* Web chat widget — mengikuti token desain situs (styles.css) */
+.floating-chat-action.is-webchat{background:linear-gradient(135deg,var(--red),var(--red-dark));position:relative}
+.floating-chat-action.is-webchat .floating-chat-icon{width:26px;height:26px}
+.floating-chat-badge{color:#fff;background:#1261d8;border:2px solid #fff;border-radius:999px;justify-content:center;align-items:center;min-width:22px;height:22px;padding:0 5px;font-size:11px;font-weight:900;line-height:1;display:inline-flex;position:absolute;top:-4px;right:-4px;box-shadow:0 6px 14px #1261d84d}
+.floating-chat-badge[hidden]{display:none!important}
+.floating-chat-toggle .floating-chat-badge{top:-2px;right:-2px}
+
+.webchat{z-index:120;background:#fff;border:1px solid #e2e8f0f0;border-radius:18px;flex-direction:column;width:min(380px,calc(100vw - 24px));height:min(600px,calc(100vh - 130px));display:flex;position:fixed;right:max(18px,env(safe-area-inset-right));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 72px);overflow:hidden;box-shadow:0 25px 70px #0f172a33;transform-origin:100% 100%;transition:opacity .22s,transform .22s}
+.webchat[hidden]{display:none!important}
+.webchat.is-entering{opacity:0;transform:translateY(12px) scale(.96)}
+.webchat-head{color:#fff;background:linear-gradient(135deg,var(--red),var(--red-dark));grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:12px;padding:14px 16px;display:grid;position:relative;overflow:hidden}
+.webchat-head:before{content:"";pointer-events:none;background:radial-gradient(circle at 85% 20%,#ffffff2e,#fff0 48%);position:absolute;inset:0}
+.webchat-avatar{background:#fff;border-radius:999px;place-items:center;width:44px;height:44px;display:grid;position:relative;box-shadow:0 8px 18px #5f030b2e}
+.webchat-avatar img{width:30px;height:30px;object-fit:contain;display:block}
+.webchat-status-dot{background:#9aa3b2;border:2px solid var(--red);border-radius:999px;width:12px;height:12px;position:absolute;right:-1px;bottom:-1px}
+.webchat-status-dot.is-online{background:#25d366}
+.webchat-title{min-width:0;position:relative}
+.webchat-title strong{font-size:16px;font-weight:900;line-height:1.2;display:block}
+.webchat-title span{opacity:.9;font-size:12px;font-weight:700;line-height:1.3;display:block;margin-top:2px}
+.webchat-head-actions{gap:4px;display:flex;position:relative}
+.webchat-head-actions button{color:#fff;cursor:pointer;background:#ffffff1f;border:0;border-radius:8px;place-items:center;width:34px;height:34px;display:grid;transition:background .18s}
+.webchat-head-actions button:hover{background:#ffffff38}
+.webchat-head-actions svg{width:19px;height:19px}
+
+.webchat-body{background:#f8fafc;flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+.webchat-messages{flex:1;min-height:0;scroll-behavior:smooth;gap:10px;padding:16px 14px;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain}
+.webchat-day{color:#8a94a6;text-align:center;margin:4px 0;font-size:11px;font-weight:800}
+.webchat-day span{background:#e9edf3;border-radius:999px;padding:4px 12px;display:inline-block}
+.webchat-msg{max-width:84%;gap:4px;display:grid}
+.webchat-msg.is-customer{justify-self:end}
+.webchat-msg.is-admin,.webchat-msg.is-system{justify-self:start}
+.webchat-bubble{color:var(--text);white-space:pre-wrap;word-break:break-word;background:#fff;border:1px solid var(--border);border-radius:14px 14px 14px 4px;padding:10px 13px;font-size:14px;line-height:1.5;box-shadow:0 6px 16px #1118270a}
+.webchat-msg.is-customer .webchat-bubble{color:#fff;background:linear-gradient(135deg,var(--red),var(--red-dark));border:0;border-radius:14px 14px 4px 14px;box-shadow:0 10px 22px #d90d192e}
+.webchat-msg.is-system .webchat-bubble{color:#172033;background:#fff3f3;border-color:#d90d1926}
+.webchat-time{color:#9aa3b2;font-size:11px;font-weight:700;padding:0 4px}
+.webchat-msg.is-customer .webchat-time{text-align:right}
+
+/* Kartu ringkasan pesanan di dalam chat */
+.webchat-order{background:#fff;border:1px solid #d90d1947;border-left:4px solid var(--red);border-radius:12px;width:100%;min-width:250px;overflow:hidden;box-shadow:0 8px 20px #d90d1914}
+.webchat-msg.has-order{max-width:100%;width:100%}
+.webchat-order-head{color:#172033;background:linear-gradient(90deg,#d90d1914,#d90d1905);align-items:center;gap:10px;padding:10px 14px;font-size:13px;font-weight:900;display:flex;white-space:nowrap}
+.webchat-order-head svg{color:var(--red);flex:none;width:18px;height:18px}
+.webchat-order-head small{color:var(--muted);margin-left:auto;font-size:11px;font-weight:800}
+.webchat-order-rows{gap:6px;padding:12px 14px;display:grid}
+.webchat-order-rows div{color:var(--muted);justify-content:space-between;gap:12px;font-size:13px;font-weight:700;display:flex}
+.webchat-order-rows div b{color:#172033;text-align:right;font-weight:900}
+.webchat-order-rows div.is-total{border-top:1px dashed #e2e8f0;margin-top:4px;padding-top:9px}
+.webchat-order-rows div.is-total b{color:var(--red);font-size:16px;font-weight:950}
+.webchat-pill{border-radius:999px;padding:3px 10px;font-size:11px;font-weight:900;text-transform:capitalize;display:inline-block}
+.webchat-pill.is-baru{color:#1261d8;background:#1261d81a}
+.webchat-pill.is-diproses{color:#b45309;background:#f59e0b24}
+.webchat-pill.is-selesai{color:#15803d;background:#22c55e24}
+.webchat-pill.is-batal{color:var(--red);background:#d90d191a}
+
+.webchat-typing{color:#8a94a6;align-items:center;gap:8px;padding:0 16px 8px;font-size:12px;font-weight:800;display:flex}
+.webchat-typing[hidden]{display:none!important}
+.webchat-footer{background:#fff;border-top:1px solid var(--border);padding:10px 12px}
+.webchat-compose{background:#fff;border:1px solid #d6dde7;border-radius:12px;grid-template-columns:minmax(0,1fr) 44px;align-items:end;gap:6px;padding:6px 6px 6px 14px;display:grid;transition:border-color .18s,box-shadow .18s}
+.webchat-compose:focus-within{border-color:#d90d1973;box-shadow:0 0 0 4px #d90d1914}
+.webchat-compose textarea{color:#172033;resize:none;background:0 0;border:0;outline:0;width:100%;max-height:120px;min-height:34px;padding:8px 0;font:inherit;font-size:14px;line-height:1.4}
+.webchat-compose textarea::placeholder{color:#9aa3b2}
+.webchat-send{color:#fff;cursor:pointer;background:linear-gradient(135deg,var(--red),var(--red-dark));border:0;border-radius:10px;place-items:center;width:44px;height:44px;display:grid;transition:transform .18s,filter .18s;box-shadow:0 10px 20px #d90d192e}
+.webchat-send:hover{filter:saturate(1.08);transform:translateY(-1px)}
+.webchat-send:disabled{cursor:default;opacity:.55;transform:none;box-shadow:none}
+.webchat-send svg{width:20px;height:20px}
+.webchat-note{color:#8a94a6;text-align:center;margin:8px 0 0;font-size:11px;font-weight:700}
+
+/* Form identitas (nama + WhatsApp) sebelum chat */
+.webchat-intro{flex:1;overflow-y:auto;gap:18px;padding:26px 22px;display:grid;align-content:start}
+.webchat-intro h3{color:#172033;margin:0;font-size:20px;font-weight:950;line-height:1.2}
+.webchat-intro p{color:var(--muted);margin:0;font-size:13px;font-weight:700;line-height:1.5}
+.webchat-form{gap:14px;display:grid}
+.webchat-form label{color:#172033;gap:8px;font-size:14px;font-weight:900;display:grid}
+.webchat-form .checkout-input-wrap{min-height:46px}
+.webchat-form .checkout-input-wrap input{min-height:44px;font-size:14px}
+.webchat-submit{color:#fff;cursor:pointer;background:var(--red);border:1px solid var(--red);border-radius:8px;justify-content:center;align-items:center;gap:8px;min-height:50px;font-size:14px;font-weight:900;display:inline-flex;box-shadow:0 12px 24px #d90d192e;transition:transform .18s}
+.webchat-submit:hover{transform:translateY(-1px)}
+.webchat-submit:disabled{cursor:wait;opacity:.72;transform:none}
+.webchat-submit svg{width:18px;height:18px}
+.webchat-form .checkout-error{margin:0}
+.webchat-alt{color:var(--muted);text-align:center;font-size:12px;font-weight:700}
+.webchat-alt a{color:var(--red);font-weight:900;text-decoration:none}
+.webchat-alt a:hover{text-decoration:underline}
+
+@media (max-width:520px){
+  .webchat{border-radius:18px 18px 0 0;width:100vw;height:min(100dvh - 76px,640px);right:0;bottom:0}
+  .webchat-head{border-radius:18px 18px 0 0}
+  body.webchat-open .floating-chat{display:none}
+}
