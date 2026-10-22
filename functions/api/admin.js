@@ -12,6 +12,7 @@ import {
   addMessage, messagesSince, parseJsonArr,
 } from '../_lib/core.js';
 import { hashPassword, verifyPassword } from '../_lib/password.js';
+import { complete, scheduleAiReply } from '../_lib/ai.js';
 import {
   createSession, destroySession, currentAdmin, requireAdmin, assertLoginAllowed, recordLoginFail, clearLoginFails,
 } from '../_lib/auth.js';
@@ -24,7 +25,7 @@ const q = (url, key, def = '') => url.searchParams.get(key) ?? def;
 const intParam = (ctx, key) => parseInt(param(ctx, key, 0), 10) || 0;
 const csvCell = (v) => { const s = v == null ? '' : String(v); return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 
-export async function onRequest({ data }) {
+export async function onRequest({ data, env }) {
   const ctx = data.ctx;
   const { db, url } = ctx;
   const action = q(url, 'action') || param(ctx, 'action', '');
@@ -131,6 +132,18 @@ export async function onRequest({ data }) {
       const on = param(ctx, 'enabled', 1) ? 1 : 0;
       await db.prepare('UPDATE conversations SET ai_enabled = ? WHERE id = ?').bind(on, intParam(ctx, 'id')).run();
       return ok();
+    }
+
+    case 'ai_test': {
+      // Diagnosa koneksi gateway AI (sinkron). Opsional: id percakapan untuk memaksa balasan sekarang.
+      if (!env.AI_API_KEY) fail('Secret AI_API_KEY belum diset.');
+      const t0 = Date.now();
+      try {
+        const convId = Number(param(ctx, 'id', 0));
+        if (convId) { const r = await scheduleAiReply(env, convId); return ok({ ms: Date.now() - t0, result: r }); }
+        const reply = await complete(env, [{ role: 'user', content: 'Balas satu kata: OK' }]);
+        return ok({ ms: Date.now() - t0, model: env.AI_MODEL, base: env.AI_BASE_URL, reply });
+      } catch (e) { fail(`Gagal: ${e.message} (${Date.now() - t0} ms)`, 502); }
     }
 
     case 'conv_status': {

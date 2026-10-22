@@ -26,7 +26,8 @@ async function ensureConnected(db, conv) {
   return { connected: true, queue_left: 0 };
 }
 
-export async function onRequest({ data, env, waitUntil }) {
+export async function onRequest(context) {
+  const { data, env } = context;
   const ctx = data.ctx;
   const { db } = ctx;
   const action = param(ctx, 'action', '');
@@ -81,7 +82,7 @@ export async function onRequest({ data, env, waitUntil }) {
       if (Number(c) >= 20) fail('Terlalu banyak pesan, coba lagi sebentar.', 429);
       const id = await addMessage(db, conv.id, 'customer', body);
       // Balasan AI dibuat di latar belakang agar respons ke pelanggan cepat.
-      if (Number(conv.ai_enabled) === 1) waitUntil(scheduleAiReply(env, conv.id).catch((e) => console.error('[ai]', e)));
+      if (Number(conv.ai_enabled) === 1) context.waitUntil(scheduleAiReply(env, conv.id).catch((e) => console.error('[ai]', e)));
       return ok({ id, created_at: now() });
     }
 

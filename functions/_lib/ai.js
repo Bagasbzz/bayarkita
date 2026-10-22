@@ -83,23 +83,27 @@ async function history(db, convId, limit = 16) {
 }
 
 // ---------- Panggil gateway ----------
-async function complete(env, messages) {
+export async function complete(env, messages) {
   const base = (env.AI_BASE_URL || 'https://vip-api.mind-aku.my.id/v1').replace(/\/+$/, '');
+  // max_tokens besar karena model reasoning (DeepSeek) menghabiskan token untuk berpikir sebelum menjawab.
   const res = await fetch(`${base}/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.AI_API_KEY}` },
-    body: JSON.stringify({ model: env.AI_MODEL || 'deepseek-v4-pro', messages, temperature: 0.7, max_tokens: 400 }),
+    body: JSON.stringify({ model: env.AI_MODEL || 'deepseek-v4-pro', messages, temperature: 0.7, max_tokens: 2000, stream: false }),
   });
   if (!res.ok) throw new Error(`AI gateway ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const j = await res.json();
-  return String(j?.choices?.[0]?.message?.content || '').trim();
+  const choice = j?.choices?.[0];
+  const text = String(choice?.message?.content || '').trim();
+  if (choice?.finish_reason === 'length') console.warn('[ai] reply truncated (finish_reason=length)');
+  return text;
 }
 
-/** Saring output: buang markdown, blok sistem, dan pola nomor rekening yang mungkin diarang. */
+/** Saring output: buang markdown, blok sistem, dan pola nomor rekening/kartu yang mungkin diarang. */
 function sanitize(text) {
   let t = text.replace(/<\/?(pesan_pelanggan|info_sistem)>/g, '').replace(/\*\*|__|^#+\s*/gm, '').replace(/```[\s\S]*?```/g, '').trim();
-  // Nomor 10+ digit berurutan (kemungkinan rekening/kartu) diganti.
-  t = t.replace(/\b\d[\d\s-]{9,}\d\b/g, '[detail dikirim tim]');
+  // Deretan 10+ digit berurutan (boleh dipisah strip) = kemungkinan rekening/kartu. Angka rupiah pakai titik ribuan jadi tidak kena.
+  t = t.replace(/(?<![\d.,])\d(?:-?\d){9,}(?![\d.,])/g, '[detail dikirim tim]');
   return t.slice(0, 1200);
 }
 
@@ -117,30 +121,31 @@ export function humanDelayMs(text, s) {
  */
 export async function scheduleAiReply(env, convId) {
   const db = env.DB;
-  if (!env.AI_API_KEY) return;
+  if (!env.AI_API_KEY) return { skip: 'no_key' };
   const s = await settingsAll(db);
-  if (String(s.ai_enabled) !== '1') return;
+  if (String(s.ai_enabled) !== '1') return { skip: 'global_off' };
   const conv = await db.prepare('SELECT * FROM conversations WHERE id = ?').bind(convId).first();
-  if (!conv || Number(conv.ai_enabled) !== 1) return;
+  if (!conv || Number(conv.ai_enabled) !== 1) return { skip: 'conv_off' };
   const agent = conv.agent && AGENTS[conv.agent] ? conv.agent : pickAgent();
   if (!conv.agent) await db.prepare('UPDATE conversations SET agent = ? WHERE id = ?').bind(agent, convId).run();
 
   // Pesan terakhir harus dari pelanggan/sistem (bukan sudah dibalas).
   const last = await db.prepare('SELECT sender FROM messages WHERE conversation_id = ? ORDER BY id DESC LIMIT 1').bind(convId).first();
-  if (!last || last.sender === 'admin') return;
+  if (!last || last.sender === 'admin') return { skip: 'already_replied' };
   // Balasan yang masih antre tampil dibatalkan (kecuali sapaan), diganti balasan baru yang mempertimbangkan pesan terbaru.
   await db.prepare("DELETE FROM messages WHERE conversation_id = ? AND sender = 'admin' AND visible_at > ? AND (meta IS NULL OR meta NOT LIKE '%greeting%')").bind(convId, fmtLocal()).run();
 
   const kb = await knowledge(db, s);
   const msgs = [{ role: 'system', content: systemPrompt(agent, s, kb, conv.name) }, ...(await history(db, convId))];
-  let reply;
+  let raw, reply;
   try {
-    reply = sanitize(await complete(env, msgs));
+    raw = await complete(env, msgs);
+    reply = sanitize(raw);
   } catch (e) {
     console.error('[ai]', e.message);
-    return;
+    return { error: e.message };
   }
-  if (!reply) return;
+  if (!reply) return { skip: 'empty', raw: String(raw).slice(0, 200) };
 
   // Jangan tampilkan sebelum pelanggan "terhubung" (masih di antrian).
   const base = Math.max(Date.now(), conv.connected_at ? parseLocal(conv.connected_at) : 0);
@@ -151,6 +156,7 @@ export async function scheduleAiReply(env, convId) {
     db.prepare("UPDATE conversations SET last_message = ?, last_sender = 'admin', last_at = ?, unread_customer = unread_customer + 1 WHERE id = ?")
       .bind(reply.slice(0, 160), visibleAt, convId),
   ]);
+  return { ok: true, visibleAt, len: reply.length };
 }
 
 /** Pesan pembuka dari agen saat pelanggan tersambung (tanpa panggil AI, hemat & cepat). */

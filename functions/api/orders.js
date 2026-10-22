@@ -11,7 +11,8 @@ import {
 import { randomHex } from '../_lib/password.js';
 import { pickAgent, scheduleAiReply } from '../_lib/ai.js';
 
-export async function onRequest({ data, env, waitUntil }) {
+export async function onRequest(context) {
+  const { data, env } = context;
   const ctx = data.ctx;
   const { db } = ctx;
   if (ctx.request.method !== 'POST') fail('Metode tidak diizinkan.', 405);
@@ -68,7 +69,7 @@ export async function onRequest({ data, env, waitUntil }) {
   });
   if (s.order_auto_reply) await addMessage(db, convId, 'system', s.order_auto_reply);
   // Agen AI menyusul dengan panduan langkah pembayaran.
-  if (ai && Number(conv.ai_enabled) === 1) waitUntil(scheduleAiReply(env, convId).catch((e) => console.error('[ai]', e)));
+  if (ai && Number(conv.ai_enabled) === 1) context.waitUntil(scheduleAiReply(env, convId).catch((e) => console.error('[ai]', e)));
 
   return ok({ token: conv.token, order: { id: orderId, code, total: calc.total, fee: calc.fee } });
 }
