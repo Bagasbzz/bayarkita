@@ -1,4 +1,4 @@
-/* Web chat widget: chat langsung di website, identitas = nama + WhatsApp, polling ke api/chat.php */
+/* Web chat widget: chat langsung di website, identitas = nama + WhatsApp, polling ke /api/chat */
 (function () {
   "use strict";
 
@@ -7,10 +7,8 @@
   var toggle = chatRoot && chatRoot.querySelector(".floating-chat-toggle");
   if (!chatRoot || !options || !toggle) return;
 
-  // Path dasar relatif ke script ini supaya bekerja di sub-folder (jasa-pembayaran/*.html)
-  var scriptEl = document.currentScript || document.querySelector('script[src$="chat.js"]');
-  var BASE = scriptEl ? scriptEl.getAttribute("src").replace(/chat\.js(\?.*)?$/, "") : "";
-  var API = BASE + "api/";
+  // API berada di root domain (Cloudflare Pages Functions), tidak tergantung sub-folder halaman.
+  var API = "/api/";
   var STORAGE_KEY = "fdv_chat";
   var POLL_MS = 3000;
 
@@ -143,7 +141,7 @@
       var showErr = function (t) { var p = document.createElement("p"); p.className = "checkout-error"; p.textContent = t; form.insertBefore(p, form.querySelector(".webchat-submit")); };
       if (name.length < 2 || phone.replace(/\D/g, "").length < 9) return showErr("Nama dan nomor WhatsApp wajib diisi dengan benar.");
       var btn = form.querySelector(".webchat-submit"); btn.disabled = true;
-      api("chat.php?action=start", { name: name, phone: phone }).then(function (r) {
+      api("chat?action=start", { name: name, phone: phone }).then(function (r) {
         btn.disabled = false;
         if (!r.ok) return showErr(r.error || "Gagal memulai chat.");
         saveSession({ token: r.token, name: r.name, phone: r.phone });
@@ -179,7 +177,7 @@
       var tempId = "tmp" + Date.now();
       renderMessage({ id: tempId, sender: "customer", body: text, created_at: localNow() });
       scrollBottom();
-      api("chat.php?action=send", { token: session.token, body: text }).then(function (r) {
+      api("chat?action=send", { token: session.token, body: text }).then(function (r) {
         if (!r.ok) {
           if (/tidak ditemukan/i.test(r.error || "")) { clearSession(); renderIntro(); return; }
           var el = messagesEl.lastElementChild; if (el) el.querySelector(".webchat-time").textContent = "Gagal terkirim: " + (r.error || "");
@@ -198,7 +196,7 @@
 
   var poll = function (initial) {
     if (!session) return Promise.resolve();
-    return api("chat.php?action=poll&token=" + encodeURIComponent(session.token) + "&since=" + lastId).then(function (r) {
+    return api("chat?action=poll&token=" + encodeURIComponent(session.token) + "&since=" + lastId).then(function (r) {
       if (!r.ok) { if (r.error && /tidak ditemukan/i.test(r.error)) { clearSession(); renderIntro(); } return; }
       var atBottom = messagesEl && messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 40;
       var gotNew = false;
@@ -209,7 +207,7 @@
       body.querySelector(".webchat-typing").hidden = !!r.admin_online;
       unread = r.unread || 0;
       if (!panel.hidden && !minimized && document.visibilityState === "visible") {
-        if (unread > 0) { api("chat.php?action=seen", { token: session.token }); unread = 0; }
+        if (unread > 0) { api("chat?action=seen", { token: session.token }); unread = 0; }
       } else if (gotNew && unread > 0) {
         notify(r.messages);
       }

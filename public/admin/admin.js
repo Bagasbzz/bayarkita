@@ -1,8 +1,8 @@
-/* Admin dashboard Fahmidev — SPA tanpa dependensi, bicara ke ../api/admin.php */
+/* Admin dashboard Fahmidev — SPA tanpa dependensi, bicara ke /api/admin (Cloudflare Pages Functions) */
 (function () {
   "use strict";
 
-  var API = "../api/admin.php?action=";
+  var API = "/api/admin?action=";
   var $ = function (id) { return document.getElementById(id); };
   var qs = function (sel, root) { return (root || document).querySelector(sel); };
   var qsa = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
@@ -364,7 +364,7 @@
       ordersPager.innerHTML = "<span>" + (j.total ? "Menampilkan " + start + "–" + Math.min(j.total, start + j.orders.length - 1) + " dari " + j.total : "0 pesanan") + "</span><div>" +
         '<button class="admin-btn admin-btn-ghost admin-btn-sm" type="button" data-page="' + (j.page - 1) + '"' + (j.page <= 1 ? " disabled" : "") + ">‹ Sebelumnya</button>" +
         '<button class="admin-btn admin-btn-ghost admin-btn-sm" type="button" data-page="' + (j.page + 1) + '"' + (j.page >= j.pages ? " disabled" : "") + ">Berikutnya ›</button></div>";
-      $("export-btn").href = "../api/admin.php?action=export_orders" + (state.orders.status ? "&status=" + state.orders.status : "") + (state.orders.q ? "&q=" + encodeURIComponent(state.orders.q) : "");
+      $("export-btn").href = "/api/admin?action=export_orders" + (state.orders.status ? "&status=" + state.orders.status : "") + (state.orders.q ? "&q=" + encodeURIComponent(state.orders.q) : "");
     }).catch(function (ex) { if (ex.status !== 401) toast(ex.message, "error"); });
   };
   ordersPager.addEventListener("click", function (e) { var b = e.target.closest("button[data-page]"); if (b && !b.disabled) { state.orders.page = parseInt(b.dataset.page, 10); loadOrders(); } });

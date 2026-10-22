@@ -2,9 +2,10 @@
 _ref/
 *.zip
 __pycache__/
-
-# Konfigurasi & data lokal (jangan di-commit)
-api/config.php
-api/data/
 _*.py
 _*.cmd
+
+# Node / Cloudflare
+node_modules/
+.wrangler/
+.dev.vars

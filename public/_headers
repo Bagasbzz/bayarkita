@@ -1,0 +1,17 @@
+# Header HTTP Cloudflare Pages (pengganti .htaccess)
+
+/api/*
+  Cache-Control: no-store
+
+/admin/*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-cache
+
+/assets/*
+  Cache-Control: public, max-age=2592000
+
+/*.css
+  Cache-Control: public, max-age=86400
+
+/*.js
+  Cache-Control: public, max-age=86400

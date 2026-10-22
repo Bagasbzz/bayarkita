@@ -99,14 +99,14 @@
       <div class="admin-toolbar">
         <span class="checkout-input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="order-search" placeholder="Cari kode / nama / nomor / layanan"></span>
         <div class="admin-chips" id="order-filter"><button class="is-active" data-status="" type="button">Semua</button><button data-status="baru" type="button">Baru</button><button data-status="diproses" type="button">Diproses</button><button data-status="selesai" type="button">Selesai</button><button data-status="batal" type="button">Batal</button></div>
-        <a class="admin-btn admin-btn-ghost" id="export-btn" href="../api/admin.php?action=export_orders">Export CSV</a>
+        <a class="admin-btn admin-btn-ghost" id="export-btn" href="/api/admin?action=export_orders">Export CSV</a>
       </div>
       <article class="admin-card"><div class="admin-table-wrap"><table class="admin-table" id="orders-table"></table></div><div class="admin-pagination" id="orders-pager"></div></article>
     </section>
 
     <!-- Services -->
     <section class="admin-view" data-view="services" hidden>
-      <div class="admin-toolbar"><p class="admin-hint">Layanan yang aktif akan tampil di <code>/api/settings.php?services=1</code>. Urutkan dengan tombol panah.</p><button class="admin-btn admin-btn-primary" id="service-add" type="button">+ Tambah layanan</button></div>
+      <div class="admin-toolbar"><p class="admin-hint">Layanan yang aktif akan tampil di <code>/api/settings?services=1</code>. Urutkan dengan tombol panah.</p><button class="admin-btn admin-btn-primary" id="service-add" type="button">+ Tambah layanan</button></div>
       <div class="admin-services" id="services-list"></div>
     </section>
 

@@ -170,14 +170,12 @@
     });
   }
 
-  // Service detail: order calculator + checkout popup (pesanan dikirim ke api/orders.php)
+  // Service detail: order calculator + checkout popup (pesanan dikirim ke /api/orders)
   var orderCard = document.querySelector(".service-order-card");
   if (orderCard) {
-    var API_BASE = (function () {
-      var s = document.querySelector('script[src$="script.js"]');
-      return s ? s.getAttribute("src").replace(/script\.js(\?.*)?$/, "") + "api/" : "api/";
-    })();
-    // Nilai default = sama dengan setting server; akan ditimpa oleh api/settings.php bila tersedia.
+    // API berada di root domain (Cloudflare Pages Functions).
+    var API_BASE = "/api/";
+    // Nilai default = sama dengan setting server; akan ditimpa oleh /api/settings bila tersedia.
     var FEE = { idr_base: 20000, idr_pct: 4.5, usd_min: 20000, usd_min_threshold: 3, usd_base: 28000, usd_pct: 1 };
     var RATES = { USD: 18600, EUR: 21500, GBP: 24800, JPY: 125, CNY: 2600, THB: 570, MYR: 4400 };
     var MIN_ORDER = { IDR: 20000, USD: 1 };
@@ -245,7 +243,7 @@
     if (currencySel) currencySel.addEventListener("change", recalc);
     recalc(); // replace pre-rendered numbers with the current fee/rate
     // Ambil fee & kurs terbaru dari pengaturan admin (fallback ke nilai default di atas).
-    fetch(API_BASE + "settings.php", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (r) {
+    fetch(API_BASE + "settings", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (r) {
       if (!r || !r.ok) return;
       if (r.fee) FEE = r.fee;
       if (r.rates) Object.keys(r.rates).forEach(function (k) { RATES[k] = r.rates[k]; });
@@ -304,7 +302,7 @@
         submitBtn.disabled = true;
         submitBtn.firstChild.textContent = "Memproses...";
         var session = window.FdvChat && window.FdvChat.getSession();
-        fetch(API_BASE + "orders.php", {
+        fetch(API_BASE + "orders", {
           method: "POST", credentials: "same-origin",
           headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
           body: JSON.stringify({
