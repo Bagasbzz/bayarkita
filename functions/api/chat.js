@@ -18,10 +18,10 @@ async function ensureConnected(db, conv) {
   if (!conv.agent || !conv.connected_at) return { connected: true, queue_left: 0 };
   const left = Math.ceil((parseLocal(conv.connected_at) - Date.now()) / 1000);
   if (left > 0) return { connected: false, queue_left: left };
-  const c = await db.prepare("SELECT COUNT(*) c FROM messages WHERE conversation_id = ? AND sender = 'admin'").bind(conv.id).first('c');
+  const c = await db.prepare("SELECT COUNT(*) c FROM messages WHERE conversation_id = ? AND sender = 'system' AND meta LIKE '%\"connected\"%'").bind(conv.id).first('c');
   if (Number(c) === 0) {
     await addMessage(db, conv.id, 'system', `Anda terhubung dengan ${conv.agent}.`, { type: 'connected', agent: conv.agent });
-    await addMessage(db, conv.id, 'admin', greetingFor(conv.agent, conv.name), { agent: conv.agent }, fmtLocal(new Date(Date.now() + randInt(2, 5) * 1000)));
+    await addMessage(db, conv.id, 'admin', greetingFor(conv.agent, conv.name), { agent: conv.agent, greeting: 1 }, fmtLocal(new Date(Date.now() + randInt(2, 5) * 1000)));
   }
   return { connected: true, queue_left: 0 };
 }

@@ -128,8 +128,8 @@ export async function scheduleAiReply(env, convId) {
   // Pesan terakhir harus dari pelanggan/sistem (bukan sudah dibalas).
   const last = await db.prepare('SELECT sender FROM messages WHERE conversation_id = ? ORDER BY id DESC LIMIT 1').bind(convId).first();
   if (!last || last.sender === 'admin') return;
-  // Balasan yang masih antre tampil dibatalkan, diganti balasan baru yang mempertimbangkan pesan terbaru.
-  await db.prepare("DELETE FROM messages WHERE conversation_id = ? AND sender = 'admin' AND visible_at > ?").bind(convId, fmtLocal()).run();
+  // Balasan yang masih antre tampil dibatalkan (kecuali sapaan), diganti balasan baru yang mempertimbangkan pesan terbaru.
+  await db.prepare("DELETE FROM messages WHERE conversation_id = ? AND sender = 'admin' AND visible_at > ? AND (meta IS NULL OR meta NOT LIKE '%greeting%')").bind(convId, fmtLocal()).run();
 
   const kb = await knowledge(db, s);
   const msgs = [{ role: 'system', content: systemPrompt(agent, s, kb, conv.name) }, ...(await history(db, convId))];
