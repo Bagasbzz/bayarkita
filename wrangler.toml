@@ -7,7 +7,7 @@ pages_build_output_dir = "public"
 [[d1_databases]]
 binding = "DB"
 database_name = "bayarkita"
-database_id = "GANTI_DENGAN_DATABASE_ID"
+database_id = "600e4c68-9608-4732-a628-8319cebfef3e"
 
 # Variabel non-rahasia. Rahasia (ADMIN_PASSWORD, SESSION_SECRET) diset lewat
 # dashboard Pages -> Settings -> Variables and Secrets, BUKAN di file ini.
