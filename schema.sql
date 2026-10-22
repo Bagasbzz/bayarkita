@@ -40,7 +40,10 @@ CREATE TABLE IF NOT EXISTS conversations (
   last_sender      TEXT,
   last_at          TEXT,
   customer_seen_at TEXT,
-  created_at       TEXT NOT NULL
+  created_at       TEXT NOT NULL,
+  agent            TEXT,                        -- nama persona AI yang menangani
+  ai_enabled       INTEGER NOT NULL DEFAULT 1,  -- 0 = admin manusia ambil alih
+  connected_at     TEXT                         -- waktu "terhubung dengan agen" (setelah antrian)
 );
 
 CREATE TABLE IF NOT EXISTS messages (
@@ -49,7 +52,8 @@ CREATE TABLE IF NOT EXISTS messages (
   sender          TEXT NOT NULL,
   body            TEXT NOT NULL,
   meta            TEXT,
-  created_at      TEXT NOT NULL
+  created_at      TEXT NOT NULL,
+  visible_at      TEXT                         -- NULL = langsung tampil; untuk jeda balasan AI
 );
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -88,6 +92,7 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 );
 
 CREATE INDEX IF NOT EXISTS idx_msg_conv ON messages (conversation_id, id);
+CREATE INDEX IF NOT EXISTS idx_msg_visible ON messages (conversation_id, visible_at);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders (status, created_at);
 CREATE INDEX IF NOT EXISTS idx_conv_last ON conversations (last_at);
 CREATE INDEX IF NOT EXISTS idx_sessions_exp ON admin_sessions (expires_at);

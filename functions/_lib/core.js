@@ -98,6 +98,11 @@ export function defaultSettings() {
     order_auto_reply: 'Terima kasih, pesanan Anda sudah kami terima. Admin akan segera mengirimkan instruksi pembayaran di chat ini.',
     quick_replies: 'Halo, terima kasih sudah menghubungi Fahmidev. Ada yang bisa kami bantu?\nPesanan Anda sedang kami proses, mohon tunggu sebentar ya.\nSilakan transfer ke rekening berikut lalu kirim bukti transfernya di sini.\nPembayaran sudah kami terima, pesanan akan segera diproses.\nPesanan Anda sudah selesai. Terima kasih sudah menggunakan jasa Fahmidev!',
     admin_last_seen: '',
+    // Live Chat AI
+    ai_enabled: 1,
+    ai_delay_min: 4, ai_delay_max: 10,        // jeda baca sebelum balas (detik)
+    ai_queue_min: 6, ai_queue_max: 20,        // lama antrian sebelum terhubung (detik)
+    ai_extra_sop: '',
   };
 }
 
@@ -219,20 +224,21 @@ export async function conversationByToken(db, token) {
   return (await db.prepare('SELECT * FROM conversations WHERE token = ?').bind(token).first()) || null;
 }
 
-export async function createConversation(db, settings, name, phone) {
+export async function createConversation(db, settings, name, phone, agent = null, connectedAt = null) {
   const token = randomHex();
   const ts = now();
-  await db.prepare('INSERT INTO conversations (token, name, phone, status, created_at, customer_seen_at) VALUES (?,?,?,?,?,?)')
-    .bind(token, name, phone, 'open', ts, ts).run();
+  await db.prepare('INSERT INTO conversations (token, name, phone, status, created_at, customer_seen_at, agent, connected_at) VALUES (?,?,?,?,?,?,?,?)')
+    .bind(token, name, phone, 'open', ts, ts, agent, connectedAt).run();
   const conv = await conversationByToken(db, token);
-  await addMessage(db, conv.id, 'system', settings.chat_greeting);
+  // Tanpa agen (chat lama / AI mati): kirim sapaan statis. Dengan agen: sapaan dikirim saat tersambung.
+  if (!agent) await addMessage(db, conv.id, 'system', settings.chat_greeting);
   return conv;
 }
 
-export async function addMessage(db, convId, sender, body, meta = null) {
-  const ts = now();
-  const res = await db.prepare('INSERT INTO messages (conversation_id, sender, body, meta, created_at) VALUES (?,?,?,?,?)')
-    .bind(convId, sender, body, meta ? JSON.stringify(meta) : null, ts).run();
+export async function addMessage(db, convId, sender, body, meta = null, visibleAt = null) {
+  const ts = visibleAt || now();
+  const res = await db.prepare('INSERT INTO messages (conversation_id, sender, body, meta, created_at, visible_at) VALUES (?,?,?,?,?,?)')
+    .bind(convId, sender, body, meta ? JSON.stringify(meta) : null, ts, visibleAt).run();
   // Pesan sistem/admin menambah unread pelanggan; pesan pelanggan menambah unread admin.
   const col = sender === 'customer' ? 'unread_admin' : 'unread_customer';
   await db.prepare(`UPDATE conversations SET last_message = ?, last_sender = ?, last_at = ?, status = 'open', ${col} = ${col} + 1 WHERE id = ?`)
@@ -240,10 +246,32 @@ export async function addMessage(db, convId, sender, body, meta = null) {
   return Number(res.meta.last_row_id);
 }
 
-export async function messagesSince(db, convId, since, limit = 200) {
-  const rows = (await db.prepare('SELECT id, sender, body, meta, created_at FROM messages WHERE conversation_id = ? AND id > ? ORDER BY id ASC LIMIT ?')
-    .bind(convId, since, limit).all()).results;
+/**
+ * Pesan baru setelah id `since`. Untuk pelanggan (forCustomer=true) pesan yang
+ * belum waktunya tampil (visible_at di masa depan) disembunyikan, dan pesan
+ * tertunda yang baru saja tampil ikut dikirim walau id-nya <= since
+ * (klien mengirim `vsince` = visible_at terakhir yang pernah diterima).
+ */
+export async function messagesSince(db, convId, since, limit = 200, forCustomer = false, vsince = '') {
+  let rows;
+  if (forCustomer) {
+    const t = now();
+    rows = (await db.prepare(
+      `SELECT id, sender, body, meta, created_at, visible_at FROM messages WHERE conversation_id = ?
+       AND ((visible_at IS NULL AND id > ?) OR (visible_at IS NOT NULL AND visible_at <= ? AND visible_at >= ?))
+       ORDER BY id ASC LIMIT ?`
+    ).bind(convId, since, t, vsince || '', limit).all()).results;
+  } else {
+    rows = (await db.prepare('SELECT id, sender, body, meta, created_at, visible_at FROM messages WHERE conversation_id = ? AND id > ? ORDER BY id ASC LIMIT ?')
+      .bind(convId, since, limit).all()).results;
+  }
   return rows.map((r) => ({ ...r, id: Number(r.id), meta: r.meta ? JSON.parse(r.meta) : null }));
+}
+
+/** Ada balasan admin/AI yang sudah dijadwalkan tapi belum tampil? (untuk indikator "mengetik"). */
+export async function hasPendingReply(db, convId) {
+  const c = await db.prepare("SELECT COUNT(*) c FROM messages WHERE conversation_id = ? AND sender = 'admin' AND visible_at > ?").bind(convId, now()).first('c');
+  return Number(c) > 0;
 }
 
 export const parseJsonArr = (s) => { try { const v = JSON.parse(s || '[]'); return Array.isArray(v) ? v : []; } catch (_) { return []; } };

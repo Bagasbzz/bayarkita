@@ -58,11 +58,11 @@
   panel.className = "webchat";
   panel.hidden = true;
   panel.setAttribute("role", "dialog");
-  panel.setAttribute("aria-label", "Chat dengan admin Fahmidev");
+  panel.setAttribute("aria-label", "Live chat Fahmidev");
   panel.innerHTML =
     '<header class="webchat-head">' +
     '<span class="webchat-avatar"><img src="' + BASE + 'assets/logo-fahmidev.svg" alt=""><span class="webchat-status-dot"></span></span>' +
-    '<div class="webchat-title"><strong>Admin Fahmidev</strong><span class="webchat-subtitle">Biasanya membalas dalam beberapa menit</span></div>' +
+    '<div class="webchat-title"><strong>Live Chat</strong><span class="webchat-subtitle">Biasanya membalas dalam beberapa menit</span></div>' +
     '<div class="webchat-head-actions"><button type="button" class="webchat-min" aria-label="Kecilkan">' + ICON.minus + '</button><button type="button" class="webchat-close" aria-label="Tutup chat">' + ICON.x + "</button></div>" +
     "</header>" +
     '<div class="webchat-body"></div>';
@@ -70,10 +70,16 @@
   var body = panel.querySelector(".webchat-body");
   var statusDot = panel.querySelector(".webchat-status-dot");
   var subtitle = panel.querySelector(".webchat-subtitle");
+  var titleEl = panel.querySelector(".webchat-title strong");
   var minimized = false;
 
-  var lastId = 0, unread = 0, pollTimer = null, rendered = {}, lastDay = "";
-  var messagesEl = null, textarea = null, sendBtn = null;
+  var lastId = 0, lastVisible = "", unread = 0, pollTimer = null, rendered = {}, lastDay = "";
+  var messagesEl = null, textarea = null, sendBtn = null, typingEl = null;
+  var agentName = "", queueTimer = null;
+  var setAgent = function (name) {
+    agentName = name || "";
+    titleEl.textContent = agentName ? agentName : "Live Chat";
+  };
 
   var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
   var fmtRp = function (n) { return "Rp " + Math.round(n).toLocaleString("id-ID"); };
@@ -116,18 +122,31 @@
     }
     var el = document.createElement("div");
     var isOrder = m.meta && m.meta.type === "order";
+    var isConnected = m.meta && m.meta.type === "connected";
+    if (isConnected) {
+      el.className = "webchat-connected";
+      el.innerHTML = "<span>" + esc(m.body) + "</span>";
+      messagesEl.appendChild(el);
+      return;
+    }
+    var who = m.sender === "admin" ? ((m.meta && m.meta.agent) || agentName || "Admin") + " \u00b7 " : "";
     el.className = "webchat-msg is-" + m.sender + (isOrder ? " has-order" : "");
     el.innerHTML = (isOrder ? orderCard(m) : '<div class="webchat-bubble">' + esc(m.body) + "</div>") +
-      '<span class="webchat-time">' + (m.sender === "admin" ? "Admin \u00b7 " : "") + fmtTime(m.created_at) + "</span>";
+      '<span class="webchat-time">' + esc(who) + fmtTime(m.created_at) + "</span>";
     messagesEl.appendChild(el);
   };
   var scrollBottom = function () { if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight; };
+  var showTyping = function (on) {
+    if (!typingEl) return;
+    typingEl.hidden = !on;
+    if (on) { typingEl.querySelector("b").textContent = agentName || "Admin"; scrollBottom(); }
+  };
 
   // ---------- Tampilan: form identitas ----------
   var renderIntro = function (prefill) {
-    stopPolling();
+    stopPolling(); stopQueue(); setAgent("");
     body.innerHTML =
-      '<div class="webchat-intro"><div><h3>Chat dengan Admin</h3><p>Isi nama dan nomor WhatsApp Anda agar admin dapat menghubungi kembali jika chat terputus.</p></div>' +
+      '<div class="webchat-intro"><div><h3>Live Chat</h3><p>Isi nama dan nomor WhatsApp Anda agar tim kami dapat menghubungi kembali jika chat terputus.</p></div>' +
       '<form class="webchat-form" novalidate>' +
       '<label>Nama<span class="checkout-input-wrap">' + ICON.user + '<input name="name" autocomplete="name" placeholder="Masukkan nama Anda" value="' + esc((prefill && prefill.name) || "") + '"></span></label>' +
       '<label>No WhatsApp<span class="checkout-input-wrap">' + ICON.phone + '<input name="phone" autocomplete="tel" inputmode="tel" placeholder="Contoh: 0812 3456 7890" value="' + esc((prefill && prefill.phone) || "") + '"></span></label>' +
@@ -145,25 +164,55 @@
         btn.disabled = false;
         if (!r.ok) return showErr(r.error || "Gagal memulai chat.");
         saveSession({ token: r.token, name: r.name, phone: r.phone });
-        renderChat();
+        if (r.queue_left > 0) renderQueue(r.queue_left); else renderChat();
       });
     });
     var first = form.querySelector("input"); if (first && !panel.hidden) first.focus();
   };
 
+  // ---------- Tampilan: antrian menunggu agen ----------
+  var stopQueue = function () { if (queueTimer) clearInterval(queueTimer); queueTimer = null; };
+  var renderQueue = function (seconds) {
+    stopPolling(); stopQueue();
+    var left = Math.max(1, Math.round(seconds));
+    body.innerHTML =
+      '<div class="webchat-queue"><div class="webchat-queue-spinner"></div>' +
+      '<h3>Menghubungkan ke tim kami\u2026</h3>' +
+      '<p>Mohon tunggu sebentar, Anda akan segera terhubung dengan agen kami.</p>' +
+      '<div class="webchat-queue-count">Perkiraan <b>' + left + '</b> detik</div></div>';
+    var countEl = body.querySelector(".webchat-queue-count b");
+    subtitle.textContent = "Menunggu agen tersedia";
+    queueTimer = setInterval(function () {
+      left -= 1;
+      if (countEl) countEl.textContent = String(Math.max(0, left));
+      if (left <= 0) {
+        stopQueue();
+        // Konfirmasi ke server bahwa sudah tersambung; server mengirim sapaan agen.
+        api("chat?action=poll&token=" + encodeURIComponent(session.token) + "&since=0").then(function (r) {
+          if (r.ok && !r.connected && r.queue_left > 0) return renderQueue(r.queue_left);
+          if (r.ok && r.agent) setAgent(r.agent);
+          renderChat();
+        });
+      }
+    }, 1000);
+  };
+
   // ---------- Tampilan: percakapan ----------
   var renderChat = function () {
+    stopQueue();
     body.innerHTML =
       '<div class="webchat-messages" aria-live="polite"></div>' +
-      '<div class="webchat-typing" hidden><span>Admin sedang offline. Pesan Anda tetap tersimpan.</span></div>' +
+      '<div class="webchat-typing" hidden><b>Admin</b> sedang mengetik<span class="webchat-dots"><i></i><i></i><i></i></span></div>' +
+      '<div class="webchat-offline" hidden><span>Admin sedang offline. Pesan Anda tetap tersimpan.</span></div>' +
       '<div class="webchat-footer"><form class="webchat-compose"><textarea rows="1" placeholder="Tulis pesan..." aria-label="Tulis pesan"></textarea>' +
       '<button class="webchat-send" type="submit" aria-label="Kirim" disabled>' + ICON.send + "</button></form>" +
       '<p class="webchat-note">Chat sebagai <b></b> \u00b7 <a href="#" class="webchat-reset">ganti</a></p></div>';
     messagesEl = body.querySelector(".webchat-messages");
+    typingEl = body.querySelector(".webchat-typing");
     textarea = body.querySelector("textarea");
     sendBtn = body.querySelector(".webchat-send");
     body.querySelector(".webchat-note b").textContent = session.name;
-    body.querySelector(".webchat-reset").addEventListener("click", function (e) { e.preventDefault(); clearSession(); lastId = 0; rendered = {}; lastDay = ""; renderIntro(); });
+    body.querySelector(".webchat-reset").addEventListener("click", function (e) { e.preventDefault(); clearSession(); lastId = 0; lastVisible = ""; rendered = {}; lastDay = ""; renderIntro(); });
     var form = body.querySelector(".webchat-compose");
     var autosize = function () { textarea.style.height = "auto"; textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px"; sendBtn.disabled = textarea.value.trim() === ""; };
     textarea.addEventListener("input", autosize);
@@ -187,7 +236,7 @@
         if (r.id > lastId) lastId = r.id;
       });
     });
-    lastId = 0; rendered = {}; lastDay = "";
+    lastId = 0; lastVisible = ""; rendered = {}; lastDay = "";
     poll(true);
     startPolling();
     if (!panel.hidden) textarea.focus();
@@ -196,15 +245,26 @@
 
   var poll = function (initial) {
     if (!session) return Promise.resolve();
-    return api("chat?action=poll&token=" + encodeURIComponent(session.token) + "&since=" + lastId).then(function (r) {
+    return api("chat?action=poll&token=" + encodeURIComponent(session.token) + "&since=" + lastId + "&vsince=" + encodeURIComponent(lastVisible)).then(function (r) {
       if (!r.ok) { if (r.error && /tidak ditemukan/i.test(r.error)) { clearSession(); renderIntro(); } return; }
-      var atBottom = messagesEl && messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 40;
+      if (r.agent) setAgent(r.agent);
+      // Masih di antrian (misal buka ulang halaman saat menunggu).
+      if (r.connected === false && r.queue_left > 0) { if (!panel.hidden && !body.querySelector(".webchat-queue")) renderQueue(r.queue_left); return; }
+      if (!messagesEl) return;
+      var atBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 40;
       var gotNew = false;
-      (r.messages || []).forEach(function (m) { if (!rendered[m.id]) gotNew = true; renderMessage(m); if (m.id > lastId) lastId = m.id; });
+      (r.messages || []).forEach(function (m) {
+        if (!rendered[m.id]) gotNew = true;
+        renderMessage(m);
+        // Pesan tertunda dilacak lewat visible_at; pesan biasa lewat id. Jangan campur agar tidak ada yang terlewat.
+        if (m.visible_at) { if (m.visible_at > lastVisible) lastVisible = m.visible_at; }
+        else if (m.id > lastId) lastId = m.id;
+      });
+      showTyping(!!r.typing);
       if (gotNew && (initial || atBottom)) scrollBottom();
       statusDot.classList.toggle("is-online", !!r.admin_online);
       subtitle.textContent = r.admin_online ? "Online \u00b7 siap membantu" : "Biasanya membalas dalam beberapa menit";
-      body.querySelector(".webchat-typing").hidden = !!r.admin_online;
+      var off = body.querySelector(".webchat-offline"); if (off) off.hidden = !!r.admin_online;
       unread = r.unread || 0;
       if (!panel.hidden && !minimized && document.visibilityState === "visible") {
         if (unread > 0) { api("chat?action=seen", { token: session.token }); unread = 0; }
@@ -229,7 +289,7 @@
   var notify = function (msgs) {
     if (!("Notification" in window) || Notification.permission !== "granted" || document.visibilityState === "visible") return;
     var last = msgs.filter(function (m) { return m.sender !== "customer"; }).pop();
-    if (last) try { new Notification("Admin Fahmidev", { body: last.body.slice(0, 120) }); } catch (e) {}
+    if (last) try { new Notification(agentName ? agentName + " \u00b7 Fahmidev" : "Live Chat Fahmidev", { body: last.body.slice(0, 120) }); } catch (e) {}
   };
 
   // ---------- Buka / tutup ----------
@@ -268,7 +328,7 @@
     /** Dipanggil setelah pesanan dibuat: simpan sesi dan buka chat dengan ringkasan pesanan. */
     openWithSession: function (s) {
       saveSession(s);
-      messagesEl = null; lastId = 0; rendered = {}; lastDay = "";
+      messagesEl = null; lastId = 0; lastVisible = ""; rendered = {}; lastDay = "";
       open();
       renderChat();
     },

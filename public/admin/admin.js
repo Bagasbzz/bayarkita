@@ -274,6 +274,9 @@
       $("thread-avatar").textContent = initials(c.name); $("thread-avatar").className = "admin-avatar" + (c.status === "closed" ? " is-closed" : "");
       $("thread-toggle-status").textContent = c.status === "closed" ? "Buka kembali" : "Tandai selesai";
       $("thread-toggle-status").dataset.status = c.status;
+      var aiBtn = $("thread-ai"); aiBtn.dataset.on = String(Number(c.ai_enabled) === 1 ? 1 : 0);
+      aiBtn.textContent = "AI: " + (Number(c.ai_enabled) === 1 ? "on" : "off") + (c.agent ? " (" + c.agent + ")" : "");
+      aiBtn.classList.toggle("is-active", Number(c.ai_enabled) === 1);
       state.conv.orders = j.orders; $("thread-order-count").textContent = j.orders.length;
       renderThreadOrders();
       if (initial) threadMsgs.innerHTML = "";
@@ -298,7 +301,8 @@
     var isOrder = m.meta && m.meta.type === "order";
     var el = document.createElement("div");
     el.className = "webchat-msg is-" + m.sender + (isOrder ? " has-order" : "");
-    el.innerHTML = (isOrder ? orderCard(m.meta) : '<div class="webchat-bubble">' + esc(m.body) + "</div>") + '<span class="webchat-time">' + (m.sender === "admin" ? "Anda \u00b7 " : m.sender === "system" ? "Sistem \u00b7 " : "") + fmtTime(m.created_at) + "</span>";
+    var who = m.sender === "admin" ? ((m.meta && m.meta.agent) ? m.meta.agent + " (AI) \u00b7 " : "Anda \u00b7 ") : m.sender === "system" ? "Sistem \u00b7 " : "";
+    el.innerHTML = (isOrder ? orderCard(m.meta) : '<div class="webchat-bubble">' + esc(m.body) + "</div>") + '<span class="webchat-time">' + esc(who) + fmtTime(m.created_at) + "</span>";
     threadMsgs.appendChild(el);
   };
   var renderThreadOrders = function () {
@@ -313,6 +317,11 @@
   $("thread-orders-btn").addEventListener("click", function () { threadOrders.hidden = !threadOrders.hidden; });
   threadOrders.addEventListener("change", function (e) { var s = e.target.closest(".admin-status-select"); if (s) changeOrderStatus(s, function () { fetchThread(false); }); });
   $("thread-back").addEventListener("click", function () { location.hash = "#inbox"; });
+  $("thread-ai").addEventListener("click", function () {
+    var id = state.conv.active; if (!id) return;
+    var next = this.dataset.on === "1" ? 0 : 1;
+    api("conv_ai", { id: id, enabled: next }).then(function () { toast(next ? "AI diaktifkan untuk percakapan ini." : "AI dimatikan, Anda membalas manual.", "success"); fetchThread(false); }).catch(function (ex) { toast(ex.message, "error"); });
+  });
   $("thread-toggle-status").addEventListener("click", function () {
     var id = state.conv.active; if (!id) return;
     var next = this.dataset.status === "closed" ? "open" : "closed";
@@ -490,7 +499,7 @@
       var s = j.settings;
       qsa("input", feeForm).forEach(function (i) { if (s[i.name] !== undefined) i.value = s[i.name]; });
       renderRates(s);
-      qsa("input,textarea", chatForm).forEach(function (i) { if (s[i.name] !== undefined) i.value = s[i.name]; });
+      qsa("input,textarea,select", chatForm).forEach(function (i) { if (s[i.name] !== undefined) i.value = s[i.name]; });
       pwForm.username.value = j.admin.username;
       feePreview();
     }).catch(function (ex) { if (ex.status !== 401) toast(ex.message, "error"); });
@@ -537,7 +546,7 @@
     Object.keys(state.settings).forEach(function (k) { if (k.indexOf("__removed_") === 0) { o[k.slice(10)] = "0"; delete state.settings[k]; } });
     return o;
   }));
-  chatForm.addEventListener("submit", saveSettings(chatForm, function () { var o = {}; qsa("input,textarea", chatForm).forEach(function (i) { o[i.name] = i.value; }); return o; }));
+  chatForm.addEventListener("submit", saveSettings(chatForm, function () { var o = {}; qsa("input,textarea,select", chatForm).forEach(function (i) { o[i.name] = i.value; }); return o; }));
   pwForm.addEventListener("submit", function (e) {
     e.preventDefault();
     api("password", { username: pwForm.username.value.trim(), old_password: pwForm.old_password.value, new_password: pwForm.new_password.value }).then(function () {

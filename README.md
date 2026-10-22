@@ -93,6 +93,15 @@ Di project Pages → **Settings**:
 | `ADMIN_USERNAME` | Text   | `admin` (atau username lain)                     |
 | `ADMIN_PASSWORD` | Secret | password admin awal, min. 8 karakter             |
 | `TIMEZONE`       | Text   | `Asia/Jakarta`                                   |
+| `AI_API_KEY`     | Secret | API key gateway Mind Aku (Live Chat AI). Kosong = AI nonaktif |
+| `AI_BASE_URL`    | Text   | Base URL gateway OpenAI-compatible (default di `wrangler.toml`) |
+| `AI_MODEL`       | Text   | ID model, mis. `deepseek-v4-pro`                 |
+
+Set secret dari terminal: `npx wrangler pages secret put AI_API_KEY --project-name <project>`.
+
+### Live Chat AI
+
+Widget chat dijawab otomatis oleh agen virtual (Nadira, Christy, Jefran, Melinda) dengan antrian singkat, jeda balas, dan indikator mengetik agar natural. AI tidak punya akses DB/tool, hanya knowledge base (layanan, fee, kurs, SOP). Balasan admin manusia di `/admin/` otomatis mematikan AI untuk percakapan itu (tombol `AI: on/off` di header thread). Pengaturan global ada di Pengaturan → Live Chat AI. Jika DB sudah ada sebelum fitur ini, jalankan `migrations/002_live_chat.sql` (`npx wrangler d1 execute <db> --remote --file=./migrations/002_live_chat.sql`).
 
 > `ADMIN_USERNAME` / `ADMIN_PASSWORD` hanya dipakai **sekali** saat seed admin pertama.
 > Setelah itu ganti password lewat menu Pengaturan di `/admin/`.

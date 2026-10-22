@@ -1,4 +1,5 @@
 # Salin menjadi `.dev.vars` untuk development lokal (file ini di-ignore git).
 # Di production, set nilai yang sama sebagai Secret di dashboard Cloudflare Pages.
 ADMIN_PASSWORD=admin12345
-SESSION_SECRET=ganti-dengan-string-acak-panjang-minimal-32-karakter
+# API key gateway Mind Aku untuk Live Chat AI (kosongkan = AI nonaktif, chat jalan manual)
+AI_API_KEY=

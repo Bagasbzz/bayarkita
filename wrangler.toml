@@ -14,3 +14,6 @@ database_id = "600e4c68-9608-4732-a628-8319cebfef3e"
 [vars]
 ADMIN_USERNAME = "admin"
 TIMEZONE = "Asia/Jakarta"
+# Live Chat AI (gateway OpenAI-compatible). API key diset sebagai secret AI_API_KEY.
+AI_BASE_URL = "https://vip-api.mind-aku.my.id/v1"
+AI_MODEL = "deepseek-v4-pro"

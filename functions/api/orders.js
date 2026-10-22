@@ -9,8 +9,9 @@ import {
   conversationByToken, createConversation, addMessage,
 } from '../_lib/core.js';
 import { randomHex } from '../_lib/password.js';
+import { pickAgent, scheduleAiReply } from '../_lib/ai.js';
 
-export async function onRequest({ data }) {
+export async function onRequest({ data, env, waitUntil }) {
   const ctx = data.ctx;
   const { db } = ctx;
   if (ctx.request.method !== 'POST') fail('Metode tidak diizinkan.', 405);
@@ -37,9 +38,11 @@ export async function onRequest({ data }) {
   const calc = calcOrder(s, amount, currency);
 
   // Pakai percakapan yang sudah ada di browser ini bila masih valid, kalau tidak buat baru.
+  // Pelanggan yang datang dari checkout langsung tersambung ke agen (tanpa antrian).
+  const ai = String(s.ai_enabled) === '1' && !!env.AI_API_KEY;
   let conv = await conversationByToken(db, token);
   if (!conv) {
-    conv = await createConversation(db, s, name, phone);
+    conv = await createConversation(db, s, name, phone, ai ? pickAgent() : null, ai ? now() : null);
   } else {
     await db.prepare('UPDATE conversations SET name = ?, phone = ? WHERE id = ?').bind(name, phone, conv.id).run();
   }
@@ -64,6 +67,8 @@ export async function onRequest({ data }) {
     amount_idr: calc.amount_idr, fee: calc.fee, total: calc.total,
   });
   if (s.order_auto_reply) await addMessage(db, convId, 'system', s.order_auto_reply);
+  // Agen AI menyusul dengan panduan langkah pembayaran.
+  if (ai && Number(conv.ai_enabled) === 1) waitUntil(scheduleAiReply(env, convId).catch((e) => console.error('[ai]', e)));
 
   return ok({ token: conv.token, order: { id: orderId, code, total: calc.total, fee: calc.fee } });
 }

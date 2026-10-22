@@ -80,6 +80,7 @@
             <div class="admin-thread-title"><strong id="thread-name"></strong><a id="thread-phone" href="#" target="_blank" rel="noreferrer"></a></div>
             <div class="admin-thread-actions">
               <button class="admin-btn admin-btn-ghost admin-btn-sm" id="thread-orders-btn" type="button">Pesanan <b id="thread-order-count">0</b></button>
+              <button class="admin-btn admin-btn-ghost admin-btn-sm" id="thread-ai" type="button" title="AI membalas otomatis di percakapan ini">AI: on</button>
               <button class="admin-btn admin-btn-ghost admin-btn-sm" id="thread-toggle-status" type="button">Tandai selesai</button>
               <button class="admin-icon-btn" id="thread-delete" type="button" title="Hapus percakapan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
             </div>
@@ -142,6 +143,15 @@
           <label>Balasan otomatis setelah pesanan<textarea name="order_auto_reply" rows="3"></textarea></label>
           <label>Catatan saat admin offline<textarea name="chat_offline_note" rows="2"></textarea></label>
           <label>Balasan cepat (satu per baris)<textarea name="quick_replies" rows="4"></textarea></label>
+          <div class="admin-card-head" style="margin-top:8px"><h2>Live Chat AI</h2><small>Agen virtual (Nadira, Christy, Jefran, Melinda) membalas otomatis. Butuh secret AI_API_KEY di Cloudflare.</small></div>
+          <label><select name="ai_enabled"><option value="1">AI aktif (balas otomatis)</option><option value="0">AI nonaktif (balas manual)</option></select></label>
+          <div class="admin-form-grid">
+            <label>Jeda balas min (detik)<input name="ai_delay_min" type="number" min="0" max="60"></label>
+            <label>Jeda balas maks (detik)<input name="ai_delay_max" type="number" min="0" max="120"></label>
+            <label>Antrian min (detik)<input name="ai_queue_min" type="number" min="0" max="120"></label>
+            <label>Antrian maks (detik)<input name="ai_queue_max" type="number" min="0" max="300"></label>
+          </div>
+          <label>Catatan / SOP tambahan untuk AI<textarea name="ai_extra_sop" rows="4" placeholder="Mis. Promo bulan ini fee gratis untuk order pertama di atas Rp 1 juta."></textarea></label>
           <button class="admin-btn admin-btn-primary" type="submit">Simpan</button>
         </form>
         <form class="admin-card admin-form" id="password-form">

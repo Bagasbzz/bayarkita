@@ -18,7 +18,7 @@ import {
 
 const ORDER_STATUSES = ['baru', 'diproses', 'selesai', 'batal'];
 const STATUS_LABELS = { baru: 'Baru', diproses: 'Diproses', selesai: 'Selesai', batal: 'Dibatalkan' };
-const NUMERIC_SETTINGS = ['fee_idr_base', 'fee_idr_pct', 'fee_usd_min', 'fee_usd_min_threshold', 'fee_usd_base', 'fee_usd_pct', 'min_order_idr', 'min_order_usd'];
+const NUMERIC_SETTINGS = ['fee_idr_base', 'fee_idr_pct', 'fee_usd_min', 'fee_usd_min_threshold', 'fee_usd_base', 'fee_usd_pct', 'min_order_idr', 'min_order_usd', 'ai_enabled', 'ai_delay_min', 'ai_delay_max', 'ai_queue_min', 'ai_queue_max'];
 
 const q = (url, key, def = '') => url.searchParams.get(key) ?? def;
 const intParam = (ctx, key) => parseInt(param(ctx, key, 0), 10) || 0;
@@ -96,7 +96,7 @@ export async function onRequest({ data }) {
       else if (filter === 'open') where.push("c.status = 'open'");
       else if (filter === 'closed') where.push("c.status = 'closed'");
       if (qs) { where.push('(c.name LIKE ? OR c.phone LIKE ? OR c.last_message LIKE ?)'); p.push(`%${qs}%`, `%${qs}%`, `%${qs}%`); }
-      const sql = `SELECT c.id, c.name, c.phone, c.status, c.unread_admin, c.last_message, c.last_sender, c.last_at, c.created_at,
+      const sql = `SELECT c.id, c.name, c.phone, c.status, c.unread_admin, c.last_message, c.last_sender, c.last_at, c.created_at, c.agent, c.ai_enabled,
         (SELECT COUNT(*) FROM orders o WHERE o.conversation_id = c.id) AS order_count
         FROM conversations c${where.length ? ' WHERE ' + where.join(' AND ') : ''} ORDER BY COALESCE(c.last_at, c.created_at) DESC LIMIT 200`;
       const rows = (await db.prepare(sql).bind(...p).all()).results.map((r) => ({ ...r, id: Number(r.id), unread_admin: Number(r.unread_admin), order_count: Number(r.order_count) }));
@@ -107,7 +107,7 @@ export async function onRequest({ data }) {
     case 'messages': {
       const id = parseInt(q(url, 'id', '0'), 10) || 0;
       const since = parseInt(q(url, 'since', '0'), 10) || 0;
-      const conv = await db.prepare('SELECT id, name, phone, status, created_at FROM conversations WHERE id = ?').bind(id).first();
+      const conv = await db.prepare('SELECT id, name, phone, status, created_at, agent, ai_enabled FROM conversations WHERE id = ?').bind(id).first();
       if (!conv) fail('Percakapan tidak ditemukan.', 404);
       const msgs = await messagesSince(db, id, since, 500);
       if (since === 0 || msgs.length) await db.prepare('UPDATE conversations SET unread_admin = 0 WHERE id = ?').bind(id).run();
@@ -120,9 +120,17 @@ export async function onRequest({ data }) {
       const body = strParam(ctx, 'body', 4000);
       if (!body) fail('Pesan kosong.');
       if (!(await db.prepare('SELECT id FROM conversations WHERE id = ?').bind(id).first())) fail('Percakapan tidak ditemukan.', 404);
-      const mid = await addMessage(db, id, 'admin', body);
-      await db.prepare('UPDATE conversations SET unread_admin = 0 WHERE id = ?').bind(id).run();
+      // Admin manusia membalas = ambil alih: matikan AI di percakapan ini dan buang balasan AI yang masih antre.
+      await db.prepare("DELETE FROM messages WHERE conversation_id = ? AND sender = 'admin' AND visible_at > ?").bind(id, now()).run();
+      const mid = await addMessage(db, id, 'admin', body, { human: true });
+      await db.prepare('UPDATE conversations SET unread_admin = 0, ai_enabled = 0 WHERE id = ?').bind(id).run();
       return ok({ id: mid, created_at: now() });
+    }
+
+    case 'conv_ai': {
+      const on = param(ctx, 'enabled', 1) ? 1 : 0;
+      await db.prepare('UPDATE conversations SET ai_enabled = ? WHERE id = ?').bind(on, intParam(ctx, 'id')).run();
+      return ok();
     }
 
     case 'conv_status': {

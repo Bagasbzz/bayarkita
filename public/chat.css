@@ -52,8 +52,27 @@
 .webchat-pill.is-selesai{color:#15803d;background:#22c55e24}
 .webchat-pill.is-batal{color:var(--red);background:#d90d191a}
 
-.webchat-typing{color:#8a94a6;align-items:center;gap:8px;padding:0 16px 8px;font-size:12px;font-weight:800;display:flex}
-.webchat-typing[hidden]{display:none!important}
+.webchat-typing,.webchat-offline{color:#8a94a6;align-items:center;gap:8px;padding:0 16px 8px;font-size:12px;font-weight:800;display:flex}
+.webchat-typing[hidden],.webchat-offline[hidden]{display:none!important}
+.webchat-typing b{color:#172033;font-weight:900}
+.webchat-dots{display:inline-flex;gap:3px;margin-left:2px}
+.webchat-dots i{width:5px;height:5px;background:#8a94a6;border-radius:50%;display:inline-block;animation:webchat-dot 1.2s infinite ease-in-out}
+.webchat-dots i:nth-child(2){animation-delay:.2s}
+.webchat-dots i:nth-child(3){animation-delay:.4s}
+@keyframes webchat-dot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+
+/* Pemisah "Anda terhubung dengan ..." */
+.webchat-connected{color:#15803d;text-align:center;margin:2px 0;font-size:11px;font-weight:800}
+.webchat-connected span{background:#22c55e1f;border-radius:999px;padding:4px 12px;display:inline-block}
+
+/* Layar antrian menunggu agen */
+.webchat-queue{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:28px 24px}
+.webchat-queue h3{color:#172033;margin:6px 0 0;font-size:17px;font-weight:900}
+.webchat-queue p{color:#5b6472;margin:0;font-size:13px;line-height:1.5}
+.webchat-queue-count{color:#8a94a6;font-size:12px;font-weight:800;margin-top:6px}
+.webchat-queue-count b{color:var(--red);font-size:14px}
+.webchat-queue-spinner{width:44px;height:44px;border:4px solid #d90d1924;border-top-color:var(--red);border-radius:50%;animation:webchat-spin .9s linear infinite}
+@keyframes webchat-spin{to{transform:rotate(360deg)}}
 .webchat-footer{background:#fff;border-top:1px solid var(--border);padding:10px 12px}
 .webchat-compose{background:#fff;border:1px solid #d6dde7;border-radius:12px;grid-template-columns:minmax(0,1fr) 44px;align-items:end;gap:6px;padding:6px 6px 6px 14px;display:grid;transition:border-color .18s,box-shadow .18s}
 .webchat-compose:focus-within{border-color:#d90d1973;box-shadow:0 0 0 4px #d90d1914}
