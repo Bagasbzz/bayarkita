@@ -107,12 +107,16 @@ function sanitize(text) {
   return t.slice(0, 1200);
 }
 
-/** Estimasi jeda manusiawi: jeda baca + waktu ketik (~7-10 karakter/detik, CS terbiasa cepat), dibatasi 14 dtk. */
+/**
+ * Estimasi jeda manusiawi, dua fase:
+ *  - read:   jeda "membaca & berpikir" (tanpa indikator mengetik), dari setting ai_delay_min..max detik
+ *  - typing: waktu mengetik ~2.5-4 karakter/detik (kecepatan ketik CS di HP/keyboard), min 4 dtk, maks 50 dtk
+ */
 export function humanDelayMs(text, s) {
-  const minRead = Number(s.ai_delay_min || 4), maxRead = Number(s.ai_delay_max || 10);
-  const read = rand(minRead, maxRead) * 1000;
-  const typing = Math.min(text.length / rand(7, 10) * 1000, 14000);
-  return Math.round(read + typing);
+  const minRead = Number(s.ai_delay_min ?? 12), maxRead = Math.max(minRead, Number(s.ai_delay_max ?? 30));
+  const read = Math.round(rand(minRead, maxRead) * 1000);
+  const typing = Math.round(Math.min(Math.max(text.length / rand(2.5, 4) * 1000, 4000), 50000));
+  return { read, typing, total: read + typing };
 }
 
 /**
@@ -149,10 +153,13 @@ export async function scheduleAiReply(env, convId) {
 
   // Jangan tampilkan sebelum pelanggan "terhubung" (masih di antrian).
   const base = Math.max(Date.now(), conv.connected_at ? parseLocal(conv.connected_at) : 0);
-  const visibleAt = fmtLocal(new Date(base + humanDelayMs(reply, s)));
+  const d = humanDelayMs(reply, s);
+  // Indikator "mengetik" baru muncul setelah fase membaca selesai (typing_from).
+  const typingFrom = fmtLocal(new Date(base + d.read));
+  const visibleAt = fmtLocal(new Date(base + d.total));
   await db.batch([
     db.prepare('INSERT INTO messages (conversation_id, sender, body, meta, created_at, visible_at) VALUES (?,?,?,?,?,?)')
-      .bind(convId, 'admin', reply, JSON.stringify({ agent }), visibleAt, visibleAt),
+      .bind(convId, 'admin', reply, JSON.stringify({ agent, typing_from: typingFrom }), visibleAt, visibleAt),
     db.prepare("UPDATE conversations SET last_message = ?, last_sender = 'admin', last_at = ?, unread_customer = unread_customer + 1 WHERE id = ?")
       .bind(reply.slice(0, 160), visibleAt, convId),
   ]);

@@ -21,7 +21,11 @@ async function ensureConnected(db, conv) {
   const c = await db.prepare("SELECT COUNT(*) c FROM messages WHERE conversation_id = ? AND sender = 'system' AND meta LIKE '%\"connected\"%'").bind(conv.id).first('c');
   if (Number(c) === 0) {
     await addMessage(db, conv.id, 'system', `Anda terhubung dengan ${conv.agent}.`, { type: 'connected', agent: conv.agent });
-    await addMessage(db, conv.id, 'admin', greetingFor(conv.agent, conv.name), { agent: conv.agent, greeting: 1 }, fmtLocal(new Date(Date.now() + randInt(2, 5) * 1000)));
+    // Sapaan: 2-4 dtk "membaca" lalu 4-7 dtk mengetik.
+    const readMs = randInt(2, 4) * 1000, typeMs = randInt(4, 7) * 1000;
+    await addMessage(db, conv.id, 'admin', greetingFor(conv.agent, conv.name),
+      { agent: conv.agent, greeting: 1, typing_from: fmtLocal(new Date(Date.now() + readMs)) },
+      fmtLocal(new Date(Date.now() + readMs + typeMs)));
   }
   return { connected: true, queue_left: 0 };
 }

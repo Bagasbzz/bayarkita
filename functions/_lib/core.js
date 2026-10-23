@@ -100,7 +100,7 @@ export function defaultSettings() {
     admin_last_seen: '',
     // Live Chat AI
     ai_enabled: 1,
-    ai_delay_min: 4, ai_delay_max: 10,        // jeda baca sebelum balas (detik)
+    ai_delay_min: 12, ai_delay_max: 30,       // jeda baca sebelum mulai mengetik (detik)
     ai_queue_min: 6, ai_queue_max: 20,        // lama antrian sebelum terhubung (detik)
     ai_extra_sop: '',
   };
@@ -268,9 +268,16 @@ export async function messagesSince(db, convId, since, limit = 200, forCustomer 
   return rows.map((r) => ({ ...r, id: Number(r.id), meta: r.meta ? JSON.parse(r.meta) : null }));
 }
 
-/** Ada balasan admin/AI yang sudah dijadwalkan tapi belum tampil? (untuk indikator "mengetik"). */
+/**
+ * Indikator "mengetik": ada balasan admin/AI terjadwal yang belum tampil DAN fase membacanya
+ * sudah lewat (meta.typing_from <= sekarang; balasan tanpa typing_from dianggap langsung mengetik).
+ */
 export async function hasPendingReply(db, convId) {
-  const c = await db.prepare("SELECT COUNT(*) c FROM messages WHERE conversation_id = ? AND sender = 'admin' AND visible_at > ?").bind(convId, now()).first('c');
+  const t = now();
+  const c = await db.prepare(
+    `SELECT COUNT(*) c FROM messages WHERE conversation_id = ? AND sender = 'admin' AND visible_at > ?
+     AND COALESCE(json_extract(meta, '$.typing_from'), '') <= ?`
+  ).bind(convId, t, t).first('c');
   return Number(c) > 0;
 }
 
