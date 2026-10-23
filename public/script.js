@@ -53,7 +53,7 @@
       chatToggle.setAttribute("aria-expanded", String(open));
       chatToggle.setAttribute("aria-label", open ? "Tutup pilihan chat" : "Buka pilihan chat");
       chatOptions.setAttribute("aria-hidden", String(!open));
-      chatOptions.querySelectorAll("a").forEach(function (a) {
+      chatOptions.querySelectorAll("a, button").forEach(function (a) {
         a.setAttribute("tabindex", open ? "0" : "-1");
       });
     };

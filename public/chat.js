@@ -9,6 +9,7 @@
 
   // API berada di root domain (Cloudflare Pages Functions), tidak tergantung sub-folder halaman.
   var API = "/api/";
+  var BASE = "/"; // root aset statis (logo, dll.)
   var STORAGE_KEY = "fdv_chat";
   var POLL_MS = 3000;
 
@@ -151,7 +152,7 @@
       '<label>Nama<span class="checkout-input-wrap">' + ICON.user + '<input name="name" autocomplete="name" placeholder="Masukkan nama Anda" value="' + esc((prefill && prefill.name) || "") + '"></span></label>' +
       '<label>No WhatsApp<span class="checkout-input-wrap">' + ICON.phone + '<input name="phone" autocomplete="tel" inputmode="tel" placeholder="Contoh: 0812 3456 7890" value="' + esc((prefill && prefill.phone) || "") + '"></span></label>' +
       '<button class="webchat-submit" type="submit"><span>Mulai Chat</span>' + ICON.arrow + "</button></form>" +
-      '<p class="webchat-alt">Atau hubungi via <a href="https://wa.me/628127968494" target="_blank" rel="noreferrer">WhatsApp</a></p></div>';
+      '<p class="webchat-alt">Atau hubungi via <a href="https://t.me/fahmidev" target="_blank" rel="noreferrer">Telegram</a></p></div>';
     var form = body.querySelector("form");
     form.addEventListener("submit", function (e) {
       e.preventDefault();
