@@ -1,9 +1,5 @@
+# Editor
 .vscode/
-_ref/
-*.zip
-__pycache__/
-_*.py
-_*.cmd
 
 # Node / Cloudflare
 node_modules/

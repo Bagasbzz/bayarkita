@@ -1,5 +1,5 @@
 /**
- * Hash password dengan PBKDF2-SHA256 (WebCrypto), pengganti password_hash() PHP.
+ * Hash password dengan PBKDF2-SHA256 (WebCrypto).
  * Format tersimpan: pbkdf2$<iterasi>$<salt hex>$<hash hex>
  */
 const ITERATIONS = 100000;

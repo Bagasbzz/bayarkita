@@ -1,6 +1,6 @@
 /**
  * Sesi admin: cookie `fdv_admin` berisi token acak; hash SHA-256-nya disimpan
- * di tabel admin_sessions (pengganti session PHP). Masa berlaku 7 hari.
+ * di tabel admin_sessions. Masa berlaku 7 hari.
  */
 import { fail, now, fmtLocal, secondsAgo } from './core.js';
 import { sha256Hex, randomHex } from './password.js';

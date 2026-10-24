@@ -1,4 +1,4 @@
-# Header HTTP Cloudflare Pages (pengganti .htaccess)
+# Header HTTP Cloudflare Pages
 
 /api/*
   Cache-Control: no-store

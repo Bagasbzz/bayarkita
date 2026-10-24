@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at      TEXT NOT NULL
 );
 
--- Sesi login admin (pengganti session PHP). Token disimpan sebagai hash SHA-256.
+-- Sesi login admin. Token disimpan sebagai hash SHA-256.
 CREATE TABLE IF NOT EXISTS admin_sessions (
   token_hash TEXT PRIMARY KEY,
   admin_id   INTEGER NOT NULL,
@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS admin_sessions (
   expires_at TEXT NOT NULL
 );
 
--- Rate limit login per IP (pengganti $_SESSION['login_fails']).
+-- Rate limit percobaan login gagal per IP.
 CREATE TABLE IF NOT EXISTS login_attempts (
   ip         TEXT NOT NULL,
   attempted_at TEXT NOT NULL

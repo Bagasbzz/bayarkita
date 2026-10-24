@@ -2,7 +2,6 @@
   "name": "bayarkita",
   "version": "2.0.0",
   "private": true,
-  "description": "Jasa pembayaran luar negeri: situs statis + web chat + admin, berjalan di Cloudflare Pages + D1.",
   "scripts": {
     "dev": "wrangler pages dev public --d1 DB=bayarkita --local",
     "db:migrate:local": "wrangler d1 execute bayarkita --local --file=./schema.sql",

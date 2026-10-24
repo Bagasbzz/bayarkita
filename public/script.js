@@ -68,10 +68,9 @@
     });
   }
 
-  // Live search filters (catalog page + FAQ page)
+  // Pencarian live (halaman katalog + FAQ): cocokkan judul item saja;
+  // bila tidak ada yang cocok, daftar diganti elemen "kosong".
   var normalise = function (s) { return (s || "").toLowerCase().replace(/\s+/g, " ").trim(); };
-  // Mirrors production: matches on the item title only; when nothing matches the
-  // list container is replaced by an empty-state element.
   var wireSearch = function (opts) {
     var input = document.querySelector(opts.input);
     var list = document.querySelector(opts.list);
