@@ -4,19 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Admin Dashboard - Fahmidev</title>
-<link rel="icon" href="../assets/logo-fahmidev.svg">
+<title>Admin Dashboard - BayarKita</title>
+<link rel="icon" href="../assets/logo-bayarkita.svg">
 <link rel="stylesheet" href="../styles.css?v=20261023">
-<link rel="stylesheet" href="admin.css">
+<link rel="stylesheet" href="admin.css?v=20261027">
 </head>
 <body class="admin-body">
 
 <!-- Login -->
 <section class="admin-login" id="login" hidden>
   <form class="admin-login-card" id="login-form" novalidate>
-    <span class="admin-login-logo"><img src="../assets/logo-fahmidev.svg" alt="Fahmidev"></span>
+    <span class="admin-login-logo"><img src="../assets/logo-bayarkita.svg" alt="BayarKita"></span>
     <h1>Masuk Admin</h1>
-    <p>Dashboard pengelolaan chat, pesanan, dan pengaturan Fahmidev.</p>
+    <p>Dashboard pengelolaan chat, pesanan, dan pengaturan BayarKita.</p>
     <label>Username<span class="checkout-input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg><input name="username" autocomplete="username" placeholder="Username" required></span></label>
     <label>Password<span class="checkout-input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><input name="password" type="password" autocomplete="current-password" placeholder="Password" required></span></label>
     <p class="checkout-error" id="login-error" hidden></p>
@@ -27,7 +27,7 @@
 <!-- App -->
 <div class="admin-app" id="app" hidden>
   <aside class="admin-sidebar" id="sidebar">
-    <a class="admin-brand" href="../index.html" target="_blank" rel="noreferrer"><img src="../assets/logo-fahmidev.svg" alt=""><span>Fahmidev <small>Admin</small></span></a>
+    <a class="admin-brand" href="../index.html" target="_blank" rel="noreferrer"><img src="../assets/logo-bayarkita.svg" alt=""><span>BayarKita <small>Admin</small></span></a>
     <nav class="admin-nav">
       <a href="#dashboard" data-view="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Dashboard</a>
       <a href="#inbox" data-view="inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Chat<span class="admin-nav-badge" id="badge-inbox" hidden>0</span></a>
@@ -99,7 +99,7 @@
     <section class="admin-view" data-view="orders" hidden>
       <div class="admin-toolbar">
         <span class="checkout-input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="order-search" placeholder="Cari kode / nama / nomor / layanan"></span>
-        <div class="admin-chips" id="order-filter"><button class="is-active" data-status="" type="button">Semua</button><button data-status="baru" type="button">Baru</button><button data-status="diproses" type="button">Diproses</button><button data-status="selesai" type="button">Selesai</button><button data-status="batal" type="button">Batal</button></div>
+        <div class="admin-chips" id="order-filter"><button class="is-active" data-status="" type="button">Semua</button><button data-status="baru" type="button">Menunggu Bayar</button><button data-status="dibayar" type="button">Dibayar</button><button data-status="diproses" type="button">Diproses</button><button data-status="selesai" type="button">Selesai</button><button data-status="batal" type="button">Batal</button></div>
         <a class="admin-btn admin-btn-ghost" id="export-btn" href="/api/admin?action=export_orders">Export CSV</a>
       </div>
       <article class="admin-card"><div class="admin-table-wrap"><table class="admin-table" id="orders-table"></table></div><div class="admin-pagination" id="orders-pager"></div></article>
@@ -154,6 +154,18 @@
           <label>Catatan / SOP tambahan untuk AI<textarea name="ai_extra_sop" rows="4" placeholder="Mis. Promo bulan ini fee gratis untuk order pertama di atas Rp 1 juta."></textarea></label>
           <button class="admin-btn admin-btn-primary" type="submit">Simpan</button>
         </form>
+        <form class="admin-card admin-form" id="payment-form">
+          <div class="admin-card-head"><h2>Pembayaran &amp; Invoice</h2><small>QRIS berisi total invoice secara otomatis. Penerimaan dana tetap diverifikasi manual oleh admin.</small></div>
+          <label>Payload QRIS statis<textarea name="qris_payload" rows="4" maxlength="2000" spellcheck="false" placeholder="000201..."></textarea></label>
+          <p class="admin-hint">Sudah diisi dari QRIS Anda. Kosongkan untuk menonaktifkan QRIS. Nama merchant mengikuti QRIS asli.</p>
+          <div class="admin-form-grid">
+            <label>Batas total QRIS (Rp, 0 = tanpa batas)<input name="qris_max" type="number" min="0" step="1" required></label>
+            <label>Masa berlaku invoice (jam)<input name="invoice_hours" type="number" min="1" max="168" step="1" required></label>
+          </div>
+          <label>Rekening / e-wallet<textarea name="payment_accounts" rows="5" maxlength="2000" spellcheck="false" placeholder="bca | nomor rekening | nama pemilik"></textarea></label>
+          <p class="admin-hint">Satu akun per baris: kode | nomor | atas nama. Kode: bca, bni, mandiri, cimb, jenius, permata, dana, gopay, ovo, shopeepay. Hanya akun yang diisi akan ditampilkan.</p>
+          <button class="admin-btn admin-btn-primary" type="submit">Simpan pembayaran</button>
+        </form>
         <form class="admin-card admin-form" id="password-form">
           <div class="admin-card-head"><h2>Akun Admin</h2></div>
           <label>Username<input name="username" autocomplete="username"></label>
@@ -170,6 +182,6 @@
 <div class="checkout-modal-overlay admin-modal" id="modal" hidden><section class="checkout-modal admin-modal-card" role="dialog" aria-modal="true"><button class="checkout-modal-close" id="modal-close" type="button" aria-label="Tutup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button><div id="modal-body"></div></section></div>
 <div class="admin-toast" id="toast" hidden></div>
 
-<script src="admin.js" defer></script>
+<script src="admin.js?v=20261026" defer></script>
 </body>
 </html>

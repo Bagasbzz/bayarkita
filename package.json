@@ -1,14 +1,27 @@
 {
   "name": "bayarkita",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "wrangler pages dev public --d1 DB=bayarkita --local",
     "db:migrate:local": "wrangler d1 execute bayarkita --local --file=./schema.sql",
     "db:migrate": "wrangler d1 execute bayarkita --remote --file=./schema.sql",
-    "deploy": "wrangler pages deploy public"
+    "db:invoice:local": "wrangler d1 execute bayarkita --local --file=./migrations/003_invoice_payment.sql",
+    "db:invoice": "wrangler d1 execute bayarkita --remote --file=./migrations/003_invoice_payment.sql",
+    "db:seats:local": "wrangler d1 execute bayarkita --local --file=./migrations/004_seat_orders.sql",
+    "db:seats": "wrangler d1 execute bayarkita --remote --file=./migrations/004_seat_orders.sql",
+    "db:po:local": "wrangler d1 execute bayarkita --local --file=./migrations/005_po_groups.sql",
+    "db:po": "wrangler d1 execute bayarkita --remote --file=./migrations/005_po_groups.sql",
+    "db:brand:local": "wrangler d1 execute bayarkita --local --file=./migrations/006_bayarkita_brand.sql",
+    "db:brand": "wrangler d1 execute bayarkita --remote --file=./migrations/006_bayarkita_brand.sql",
+    "deploy": "wrangler pages deploy public",
+    "test": "node scripts/test-qris.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
+  },
+  "dependencies": {
+    "qrcode-generator": "^2.0.4"
   }
 }

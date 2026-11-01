@@ -92,17 +92,24 @@ export function defaultSettings() {
     fee_usd_min: 20000, fee_usd_min_threshold: 3, fee_usd_base: 28000, fee_usd_pct: 1,
     rate_USD: 18600, rate_EUR: 21500, rate_GBP: 24800, rate_JPY: 125, rate_CNY: 2600, rate_THB: 570, rate_MYR: 4400,
     min_order_idr: 20000, min_order_usd: 1,
-    wa_number: '628127968494', telegram: 'fahmidev',
+    wa_number: '628127968494', telegram: 'bayarkitaid',
     chat_greeting: 'Halo! Ada yang bisa kami bantu? Tulis pesan Anda di sini, admin akan membalas secepatnya.',
     chat_offline_note: 'Admin sedang offline. Pesan Anda tetap tersimpan dan akan dibalas saat admin online.',
-    order_auto_reply: 'Terima kasih, pesanan Anda sudah kami terima. Admin akan segera mengirimkan instruksi pembayaran di chat ini.',
-    quick_replies: 'Halo, terima kasih sudah menghubungi Fahmidev. Ada yang bisa kami bantu?\nPesanan Anda sedang kami proses, mohon tunggu sebentar ya.\nSilakan transfer ke rekening berikut lalu kirim bukti transfernya di sini.\nPembayaran sudah kami terima, pesanan akan segera diproses.\nPesanan Anda sudah selesai. Terima kasih sudah menggunakan jasa Fahmidev!',
+    order_auto_reply: 'Terima kasih, pesanan Anda sudah kami terima. Silakan selesaikan pembayaran lewat halaman invoice (rekening & QRIS tersedia di sana), lalu konfirmasi ke admin.',
+    quick_replies: 'Halo, terima kasih sudah menghubungi BayarKita. Ada yang bisa kami bantu?\nPesanan Anda sedang kami proses, mohon tunggu sebentar ya.\nSilakan transfer ke rekening berikut lalu kirim bukti transfernya di sini.\nPembayaran sudah kami terima, pesanan akan segera diproses.\nPesanan Anda sudah selesai. Terima kasih sudah menggunakan jasa BayarKita!',
     admin_last_seen: '',
     // Live Chat AI
     ai_enabled: 1,
     ai_delay_min: 12, ai_delay_max: 30,       // jeda baca sebelum mulai mengetik (detik)
     ai_queue_min: 6, ai_queue_max: 20,        // lama antrian sebelum terhubung (detik)
     ai_extra_sop: '',
+    // Pembayaran & invoice
+    // Payload QRIS statis (teks hasil scan QR). Dipakai untuk membuat QRIS dinamis berisi total pesanan.
+    qris_payload: '00020101021126570011ID.DANA.WWW011893600915303270621302090327062130303UMI51440014ID.CO.QRIS.WWW0215ID10265345984810303UMI5204481453033605802ID5922Maju teknologi digital6015Kota Jakarta Pu61051012063042129',
+    qris_max: 1000000,                        // QRIS disembunyikan jika total > nilai ini (0 = tanpa batas)
+    invoice_hours: 24,                        // masa berlaku invoice
+    // Rekening/e-wallet, satu per baris: kode | nomor | atas nama   (kode: bca, bni, mandiri, cimb, jenius, permata, dana, gopay, ovo, shopeepay)
+    payment_accounts: '',
   };
 }
 
@@ -191,7 +198,10 @@ export function calcOrder(s, amount, currency) {
     idr = amount;
     fee = Number(s.fee_idr_base) + idr * Number(s.fee_idr_pct) / 100;
   } else {
-    rate = Number(s['rate_' + currency] ?? s.rate_USD);
+    // Kurs 0/kosong = mata uang dinonaktifkan admin. Jangan pernah jatuh ke kurs lain
+    // (sebelumnya rate 0 membuat total = fee saja).
+    rate = Number(s['rate_' + currency]);
+    if (!(rate > 0)) fail('Mata uang tidak didukung.');
     idr = amount * rate;
     const usdEquiv = idr / Number(s.rate_USD);
     fee = usdEquiv < Number(s.fee_usd_min_threshold)

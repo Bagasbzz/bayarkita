@@ -59,10 +59,10 @@
   panel.className = "webchat";
   panel.hidden = true;
   panel.setAttribute("role", "dialog");
-  panel.setAttribute("aria-label", "Live chat Fahmidev");
+  panel.setAttribute("aria-label", "Live chat BayarKita");
   panel.innerHTML =
     '<header class="webchat-head">' +
-    '<span class="webchat-avatar"><img src="' + BASE + 'assets/logo-fahmidev.svg" alt=""><span class="webchat-status-dot"></span></span>' +
+    '<span class="webchat-avatar"><img src="' + BASE + 'assets/logo-bayarkita.svg" alt=""><span class="webchat-status-dot"></span></span>' +
     '<div class="webchat-title"><strong>Live Chat</strong><span class="webchat-subtitle">Biasanya membalas dalam beberapa menit</span></div>' +
     '<div class="webchat-head-actions"><button type="button" class="webchat-min" aria-label="Kecilkan">' + ICON.minus + '</button><button type="button" class="webchat-close" aria-label="Tutup chat">' + ICON.x + "</button></div>" +
     "</header>" +
@@ -100,14 +100,18 @@
     return d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
   };
 
-  var STATUS_LABEL = { baru: "Baru", diproses: "Diproses", selesai: "Selesai", batal: "Dibatalkan" };
+  var STATUS_LABEL = { baru: "Menunggu Pembayaran", dibayar: "Dibayar", diproses: "Diproses", selesai: "Selesai", batal: "Dibatalkan" };
   var orderCard = function (m) {
     var o = m.meta;
-    return '<div class="webchat-order"><div class="webchat-order-head">' + ICON.bag + "<span>Pesanan #" + esc(o.code) + '</span><small><span class="webchat-pill is-' + esc(o.status) + '">' + (STATUS_LABEL[o.status] || o.status) + "</span></small></div>" +
+    // Link invoice hanya dari server dengan format /inv/{kode}.
+    var inv = /^\/inv\/FDV-[\w-]+$/.test(o.invoice_url || "") ? o.invoice_url : "";
+    return '<div class="webchat-order"><div class="webchat-order-head">' + ICON.bag + "<span>Pesanan #" + esc(o.code) + '</span><small><span class="webchat-pill is-' + esc(o.status) + '">' + (STATUS_LABEL[o.status] || esc(o.status)) + "</span></small></div>" +
       '<div class="webchat-order-rows"><div><span>Layanan</span><b>' + esc(o.service_name) + (o.plan ? " \u00b7 " + esc(o.plan) : "") + "</b></div>" +
       "<div><span>Harga</span><b>" + fmtAmount(o.amount, o.currency) + (o.currency !== "IDR" ? " \u2248 " + fmtRp(o.amount_idr) : "") + "</b></div>" +
       "<div><span>Biaya fee</span><b>" + fmtRp(o.fee) + "</b></div>" +
-      '<div class="is-total"><span>Total</span><b>' + fmtRp(o.total) + "</b></div></div></div>";
+      '<div class="is-total"><span>Total</span><b>' + fmtRp(o.total) + "</b></div>" +
+      (o.po_group ? '<div><span>Progress PO</span><b>' + esc(o.po_group.member_count + '/' + o.po_group.target_size) + '</b></div>' : '') +
+      (inv ? '<a class="webchat-order-link" href="' + esc(inv) + '">Lihat invoice &amp; bayar</a>' : "") + "</div></div>";
   };
 
   var renderMessage = function (m) {
@@ -152,7 +156,7 @@
       '<label>Nama<span class="checkout-input-wrap">' + ICON.user + '<input name="name" autocomplete="name" placeholder="Masukkan nama Anda" value="' + esc((prefill && prefill.name) || "") + '"></span></label>' +
       '<label>No WhatsApp<span class="checkout-input-wrap">' + ICON.phone + '<input name="phone" autocomplete="tel" inputmode="tel" placeholder="Contoh: 0812 3456 7890" value="' + esc((prefill && prefill.phone) || "") + '"></span></label>' +
       '<button class="webchat-submit" type="submit"><span>Mulai Chat</span>' + ICON.arrow + "</button></form>" +
-      '<p class="webchat-alt">Atau hubungi via <a href="https://t.me/fahmidev" target="_blank" rel="noreferrer">Telegram</a></p></div>';
+      '<p class="webchat-alt">Atau hubungi via <a href="https://t.me/bayarkitaid" target="_blank" rel="noreferrer">Telegram</a></p></div>';
     var form = body.querySelector("form");
     form.addEventListener("submit", function (e) {
       e.preventDefault();
@@ -290,7 +294,7 @@
   var notify = function (msgs) {
     if (!("Notification" in window) || Notification.permission !== "granted" || document.visibilityState === "visible") return;
     var last = msgs.filter(function (m) { return m.sender !== "customer"; }).pop();
-    if (last) try { new Notification(agentName ? agentName + " \u00b7 Fahmidev" : "Live Chat Fahmidev", { body: last.body.slice(0, 120) }); } catch (e) {}
+    if (last) try { new Notification(agentName ? agentName + " \u00b7 BayarKita" : "Live Chat BayarKita", { body: last.body.slice(0, 120) }); } catch (e) {}
   };
 
   // ---------- Buka / tutup ----------
@@ -326,6 +330,8 @@
   // ---------- API publik untuk checkout (script.js) ----------
   window.FdvChat = {
     getSession: function () { return session; },
+    /** Simpan sesi tanpa membuka panel (dipakai sebelum redirect ke invoice). */
+    saveSession: function (s) { saveSession(s); },
     /** Dipanggil setelah pesanan dibuat: simpan sesi dan buka chat dengan ringkasan pesanan. */
     openWithSession: function (s) {
       saveSession(s);

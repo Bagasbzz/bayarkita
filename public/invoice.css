@@ -1,0 +1,66 @@
+/* Halaman invoice BayarKita.store: detail pesanan dan metode pembayaran. */
+.inv-page{background:#f6f8fb;min-height:calc(100vh - 80px);padding:128px 0 72px}
+.inv-wrap{max-width:1080px;margin:0 auto;padding:0 16px;display:grid;gap:20px}
+.inv-hero{text-align:center;display:grid;justify-items:center;gap:10px;padding:8px 0 4px}
+.inv-hero-icon{width:68px;height:68px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--red);box-shadow:0 12px 30px #f9731640}
+.inv-hero-icon svg{width:34px;height:34px}
+.inv-hero.is-paid .inv-hero-icon{background:#16a34a;box-shadow:0 12px 30px #16a34a40}
+.inv-hero.is-dead .inv-hero-icon{background:#94a3b8;box-shadow:none}
+.inv-hero h1{font-size:clamp(24px,4vw,32px);font-weight:900;color:var(--text)}
+.inv-hero p{color:var(--muted);font-weight:600;max-width:520px}
+.inv-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:20px;align-items:start}
+.inv-card{min-width:0;background:#fff;border:1px solid var(--border);border-radius:20px;box-shadow:var(--soft-shadow);padding:22px}
+.inv-card h2{font-size:17px;font-weight:900;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.inv-rows{display:grid;gap:10px}
+.inv-rows div{display:flex;justify-content:space-between;gap:16px;font-size:14px;color:var(--muted);font-weight:600}
+.inv-rows div>span{flex-shrink:0}
+.inv-rows b{min-width:0;color:var(--text);text-align:right;font-weight:800;overflow-wrap:anywhere}
+.inv-rows .is-total{border-top:1px dashed #dbe1ea;padding-top:12px;margin-top:2px}
+.inv-rows .is-total b{color:var(--red);font-size:18px;font-weight:950}
+.inv-pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:800;background:#e8f0fe;color:#1261d8}
+.inv-pill.is-dibayar,.inv-pill.is-diproses,.inv-pill.is-selesai{background:#dcfce7;color:#15803d}
+.inv-pill.is-batal,.inv-pill.is-kedaluwarsa{background:#f1f4f8;color:#64748b}
+.inv-steps{counter-reset:s;display:grid;gap:10px;list-style:none;margin-top:4px}
+.inv-steps li{counter-increment:s;display:flex;gap:12px;font-size:14px;color:#334155;font-weight:600;line-height:1.5}
+.inv-steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-radius:50%;background:var(--red-soft);color:var(--red);font-size:12px;font-weight:900;display:grid;place-items:center}
+.inv-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.inv-tab:focus-visible,.inv-copy:focus-visible,.inv-wa:focus-visible{outline:3px solid #1261d8;outline-offset:3px}
+.inv-tab{border:1.5px solid var(--border);background:#fff;border-radius:12px;height:46px;min-width:76px;padding:0 12px;display:grid;place-items:center;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.inv-tab img{max-height:22px;max-width:64px;object-fit:contain}
+.inv-tab:hover{border-color:#cbd5e1}
+.inv-tab.is-active{border-color:var(--red);box-shadow:0 0 0 3px #f9731614}
+.inv-tab[disabled]{opacity:.38;cursor:not-allowed;filter:grayscale(1)}
+.inv-method{position:relative;border:1px solid var(--border);border-radius:16px;padding:20px;min-height:200px;display:grid;align-content:center;justify-items:center;gap:10px;text-align:center;animation:invIn .3s ease}
+@keyframes invIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.inv-method small{color:var(--muted);font-weight:700;font-size:13px}
+.inv-method .inv-acc{font-size:clamp(20px,4.5vw,30px);font-weight:950;letter-spacing:.5px;color:var(--text);word-break:break-all}
+.inv-method .inv-owner{font-weight:800;color:#334155}
+.inv-copy{border:0;background:var(--red-soft);color:var(--red);font-weight:800;border-radius:10px;padding:8px 16px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.inv-copy.is-done{background:#dcfce7;color:#15803d}
+.inv-qr{width:min(280px,100%);aspect-ratio:1;background:#fff;border-radius:12px;padding:6px;border:1px solid var(--border)}
+.inv-qr img{width:100%;height:100%;display:block;image-rendering:pixelated}
+.inv-qr-amount{font-size:22px;font-weight:950;color:var(--red)}
+.inv-qr-note{font-size:12.5px;color:var(--muted);font-weight:600;max-width:340px}
+.inv-qris-logo{height:26px}
+.inv-method.is-locked>*{filter:blur(5px);opacity:.34;pointer-events:none}
+.inv-method .inv-badge{position:absolute;inset:auto;filter:none;opacity:1;background:#16a34a;color:#fff;font-weight:900;border-radius:999px;padding:10px 20px;box-shadow:0 10px 30px #16a34a55;pointer-events:none}
+.inv-method.is-locked .inv-badge{filter:none;opacity:1}
+.inv-method.is-dead .inv-badge{background:#64748b;box-shadow:none}
+.inv-total-bar{margin-top:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;background:#fafbfd;border:1px solid var(--border);border-radius:14px;padding:14px 16px}
+.inv-po-notice{grid-column:1/-1;border-color:#f1d6aa;background:#fffaf0}.inv-po-notice p{color:#6b4b16;font-size:13px;line-height:1.6;margin-top:8px}
+.admin-po-summary{display:grid;gap:4px;margin:12px 0;padding:12px 14px;border:1px solid #f0c7cb;border-radius:12px;background:#fff7ed;color:#7f1d1d;font-size:13px}
+.inv-total-bar span{color:var(--muted);font-weight:700;font-size:14px}
+.inv-total-bar strong{color:var(--red);font-size:20px;font-weight:950}
+.inv-wa{margin-top:14px;width:100%;height:52px;border-radius:14px;background:#16a34a;color:#fff;font-weight:900;font-size:15px;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .15s}
+.inv-wa:hover{background:#15803d}
+.inv-wa svg{width:20px;height:20px}
+.inv-expiry{margin-top:10px;text-align:center;font-size:13px;color:var(--muted);font-weight:700}
+.inv-expiry b{color:var(--text)}
+.inv-empty{padding:60px 16px;text-align:center;display:grid;gap:10px;justify-items:center}
+.inv-empty h1{font-size:24px;font-weight:900}
+.inv-empty a{color:var(--red);font-weight:800}
+.inv-loading{padding:80px 0;text-align:center;color:var(--muted);font-weight:700}
+.inv-tip{position:relative}
+.inv-tip[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:0;background:#0f172a;color:#fff;font-size:12px;font-weight:600;padding:6px 10px;border-radius:8px;width:230px;z-index:5}
+@media (max-width:860px){.inv-grid{grid-template-columns:1fr}}
+@media (max-width:840px){.inv-page{padding-top:94px}}

@@ -178,44 +178,55 @@
     var FEE = { idr_base: 20000, idr_pct: 4.5, usd_min: 20000, usd_min_threshold: 3, usd_base: 28000, usd_pct: 1 };
     var RATES = { USD: 18600, EUR: 21500, GBP: 24800, JPY: 125, CNY: 2600, THB: 570, MYR: 4400 };
     var MIN_ORDER = { IDR: 20000, USD: 1 };
-    var rateFor = function (cur) { return cur === "IDR" ? 1 : (RATES[cur] || RATES.USD); };
+    var rateFor = function (cur) { return cur === "IDR" ? 1 : (Number(RATES[cur]) || 0); };
     var feeFor = function (amount, cur) {
       if (cur === "IDR") return FEE.idr_base + amount * FEE.idr_pct / 100;
       var idr = amount * rateFor(cur);
       if (idr / RATES.USD < FEE.usd_min_threshold) return FEE.usd_min;
       return FEE.usd_base + idr * FEE.usd_pct / 100;
     };
+    var optionGrid = orderCard.querySelector(".service-option-grid");
+    var serviceName = (document.querySelector(".service-summary-brand h1") || {}).textContent || "";
+    serviceName = serviceName.replace(/^Jasa Pembayaran\s+/i, "").trim();
+    var serviceSlug = (location.pathname.split("/").pop() || "").replace(/\.html$/, "");
+    if (optionGrid && (serviceSlug === "claude" || serviceSlug === "chatgpt")) {
+      var seatButtons = serviceSlug === "claude"
+        ? '<button data-amount="257000" data-currency="IDR" data-custom="false" data-product-key="claude-team-standard" aria-selected="false" role="tab" type="button">Team Standard Seat</button><button data-amount="812000" data-currency="IDR" data-custom="false" data-product-key="claude-team-premium" aria-selected="false" role="tab" type="button">Team Premium Seat</button><button data-amount="5.55" data-currency="USD" data-custom="false" data-po-key="claude-pro-po-4" aria-selected="false" role="tab" type="button">PO Claude Pro (1/4)</button>'
+        : '<button data-amount="58000" data-currency="IDR" data-custom="false" data-product-key="chatgpt-business-standard" aria-selected="false" role="tab" type="button">Business Standard Seat</button><button data-amount="316000" data-currency="IDR" data-custom="false" data-product-key="chatgpt-business-premium" aria-selected="false" role="tab" type="button">Business Premium Seat</button><button data-amount="87250" data-currency="IDR" data-custom="false" data-po-key="chatgpt-plus-po-4" aria-selected="false" role="tab" type="button">PO ChatGPT Plus (1/4)</button>';
+      var customTab = optionGrid.querySelector('[data-custom="true"]');
+      if (customTab) {
+        customTab.insertAdjacentHTML("beforebegin", seatButtons);
+        optionGrid.insertAdjacentHTML("afterend", '<p class="service-seat-note">Seat promo Business diundang ke email masing-masing tanpa fee. Opsi PO membeli paket umum dan menunggu empat peserta hingga tujuh hari; tiap peserta memakai email masing-masing dan dikenai biaya PO Rp5.000.</p>');
+      }
+    }
     var tabs = Array.prototype.slice.call(orderCard.querySelectorAll(".service-option-grid button"));
     var currencySel = orderCard.querySelector(".service-order-fields select");
+    if (currencySel && serviceSlug === "claude" && !currencySel.querySelector('option[value="IDR"]')) currencySel.insertAdjacentHTML("beforeend", '<option value="IDR">IDR</option>');
     var amountInput = orderCard.querySelector(".service-order-fields input");
     var amountLabel = amountInput && amountInput.parentNode;
     var costStrong = orderCard.querySelectorAll(".service-cost-summary strong");
     var orderBtn = orderCard.querySelector(".service-order-button");
     var brandImg = orderCard.querySelector(".service-order-brand-icon img");
-    var serviceName = (document.querySelector(".service-summary-brand h1") || {}).textContent || "";
-    serviceName = serviceName.replace(/^Jasa Pembayaran\s+/i, "").trim();
-    var serviceSlug = (location.pathname.split("/").pop() || "").replace(/\.html$/, "");
-
     var fmtRp = function (n) { return "Rp " + Math.round(n).toLocaleString("id-ID"); };
     var fmtPrice = function (n, cur) {
-      if (cur === "IDR") return "IDR\u00a0" + Math.round(n).toLocaleString("en-US");
-      var sym = cur === "EUR" ? "\u20ac" : "$";
+      if (cur === "IDR") return fmtRp(n);
+      var sym = { USD: "$", EUR: "\u20ac", GBP: "\u00a3", JPY: "\u00a5", CNY: "\u00a5", THB: "\u0e3f", MYR: "RM" }[cur] || cur + " ";
       return sym + n.toLocaleString("en-US", { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 });
     };
-    var state = { amount: 0, currency: "IDR", plan: "" };
+    var state = { amount: 0, currency: "IDR", plan: "", productKey: "", poKey: "" };
     var recalc = function () {
       var cur = currencySel ? currencySel.value : "IDR";
       var amount = parseFloat(amountInput.value) || 0;
-      var fee = feeFor(amount, cur);
+      var fee = state.productKey ? 0 : state.poKey ? 5000 : feeFor(amount, cur);
       var total = amount * rateFor(cur) + fee;
-      state = { amount: amount, currency: cur, fee: fee, total: total, plan: state.plan };
+      state = { amount: amount, currency: cur, fee: fee, total: total, plan: state.plan, productKey: state.productKey, poKey: state.poKey };
       if (costStrong[0]) costStrong[0].textContent = fmtPrice(amount, cur);
       if (costStrong[1]) costStrong[1].textContent = fmtRp(fee);
       if (costStrong[2]) costStrong[2].textContent = fmtRp(total);
       if (amountLabel) amountLabel.firstChild.textContent = "Jumlah " + cur;
       if (orderBtn) {
         var min = cur === "IDR" ? MIN_ORDER.IDR : MIN_ORDER.USD;
-        var ok = amount >= min;
+        var ok = amount >= min && rateFor(cur) > 0;
         orderBtn.classList.toggle("is-disabled", !ok);
         orderBtn.setAttribute("aria-disabled", String(!ok));
         if (ok) orderBtn.removeAttribute("tabindex"); else orderBtn.setAttribute("tabindex", "-1");
@@ -233,11 +244,15 @@
         amountInput.value = tab.getAttribute("data-amount") || "0";
         if (currencySel && tab.getAttribute("data-currency")) currencySel.value = tab.getAttribute("data-currency");
         state.plan = tab.textContent.trim();
+        state.productKey = tab.getAttribute("data-product-key") || "";
+        state.poKey = tab.getAttribute("data-po-key") || "";
         recalc();
       });
     });
     var activeTab = tabs.filter(function (t) { return t.classList.contains("is-active"); })[0];
     state.plan = activeTab ? activeTab.textContent.trim() : "";
+    state.productKey = activeTab ? activeTab.getAttribute("data-product-key") || "" : "";
+    state.poKey = activeTab ? activeTab.getAttribute("data-po-key") || "" : "";
     if (amountInput) amountInput.addEventListener("input", recalc);
     if (currencySel) currencySel.addEventListener("change", recalc);
     recalc(); // replace pre-rendered numbers with the current fee/rate
@@ -250,7 +265,7 @@
       recalc();
     }).catch(function () {});
 
-    // Checkout popup — same markup as the reference, submission is UI-only.
+    // Checkout popup: Lanjutkan -> POST /api/orders -> redirect ke halaman invoice /inv/{kode}.
     var ICON_X = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
     var ICON_SHIELD = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>';
     var ICON_USER = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>';
@@ -265,12 +280,13 @@
         '<section aria-labelledby="checkout-title" aria-modal="true" class="checkout-modal" role="dialog">' +
         '<button aria-label="Tutup popup" class="checkout-modal-close" type="button">' + ICON_X + "</button>" +
         '<div class="checkout-product-heading"><span class="checkout-modal-logo"><span class="brand-logo brand-image-logo">' +
-        (brandImg ? '<img alt="' + serviceName + '" width="320" height="160" src="' + brandImg.getAttribute("src") + '">' : "") +
+        (brandImg ? '<img alt="" width="320" height="160" src="' + brandImg.getAttribute("src") + '">' : "") +
         '</span></span><div class="checkout-product-copy"><h2 id="checkout-title"></h2><p></p><strong></strong></div></div>' +
         '<div class="checkout-total-card"><span>Total Pembayaran</span><strong></strong>' + ICON_SHIELD + "</div>" +
-        '<form class="checkout-form" novalidate>' +
+         '<form class="checkout-form" novalidate>' +
         '<label>Nama<span class="checkout-input-wrap">' + ICON_USER + '<input autocomplete="name" placeholder="Masukkan nama lengkap Anda" value="' + (saved && saved.name ? saved.name.replace(/"/g, "&quot;") : "") + '"></span></label>' +
-        '<label>No WhatsApp<span class="checkout-input-wrap">' + ICON_CHAT + '<input autocomplete="tel" inputmode="tel" placeholder="Contoh: 0812 3456 7890" value="' + (saved && saved.phone ? saved.phone : "") + '"></span></label>' +
+         '<label>No WhatsApp<span class="checkout-input-wrap">' + ICON_CHAT + '<input autocomplete="tel" inputmode="tel" placeholder="Contoh: 0812 3456 7890" value="' + (saved && saved.phone ? String(saved.phone).replace(/[^\d+\- ]/g, "") : "") + '"></span></label>' +
+         (state.productKey ? '<label>Email untuk undangan seat<span class="checkout-input-wrap"><input type="email" name="customer_email" autocomplete="email" inputmode="email" placeholder="nama@email.com" required></span></label><p class="checkout-seat-note">Undangan seat dikirim ke email ini. Admin juga menghubungi melalui WhatsApp.</p>' : state.poKey ? '<label>Email peserta PO<span class="checkout-input-wrap"><input type="email" name="customer_email" autocomplete="email" inputmode="email" placeholder="nama@email.com" required></span></label><p class="checkout-seat-note">Dipakai untuk menghubungi Anda soal PO. Empat peserta mengumpulkan biaya paket umum dalam 7 hari.</p>' : "") +
         '<div class="checkout-actions"><button class="checkout-cancel-button" type="button">Batal</button>' +
         '<button class="checkout-submit-button" type="submit"><span>Lanjutkan</span></button></div></form></section>';
       overlay.querySelector("#checkout-title").textContent = serviceName;
@@ -295,8 +311,11 @@
           msg.textContent = text;
           form.insertBefore(msg, form.querySelector(".checkout-actions"));
         };
-        var name = inputs[0].value.trim(), phone = inputs[1].value.trim();
+         var name = inputs[0].value.trim(), phone = inputs[1].value.trim();
+         var emailInput = form.querySelector('[name="customer_email"]');
+         var customerEmail = emailInput ? emailInput.value.trim().toLowerCase() : "";
         if (!name || !phone) return showErr("Nama dan nomor WhatsApp wajib diisi.");
+         if (emailInput && (!emailInput.checkValidity() || !customerEmail)) { emailInput.focus(); return showErr("Masukkan email yang valid untuk undangan seat."); }
         var submitBtn = form.querySelector(".checkout-submit-button");
         submitBtn.disabled = true;
         submitBtn.firstChild.textContent = "Memproses...";
@@ -307,17 +326,19 @@
           body: JSON.stringify({
             name: name, phone: phone, token: session ? session.token : "",
             service_slug: serviceSlug, service_name: serviceName, plan: state.plan,
-            amount: state.amount, currency: state.currency
+             amount: state.amount, currency: state.currency,
+             product_key: state.productKey, po_key: state.poKey, customer_email: customerEmail
           })
         }).then(function (r) { return r.json(); }).then(function (r) {
-          if (!r || !r.ok) throw new Error((r && r.error) || "Gagal mengirim pesanan.");
-          close();
-          // Konfirmasi pesanan masuk ke chat web; buka panel chat-nya.
-          if (window.FdvChat) window.FdvChat.openWithSession({ token: r.token, name: name, phone: phone });
+          if (!r || !r.ok) throw new Error((r && r.error) || "Pesanan gagal dibuat. Silakan coba lagi.");
+          if (!/^\/inv\/FDV-\d{6}-[0-9A-F]{5,32}$/.test(r.redirectUrl || "")) throw new Error("Link invoice tidak valid. Silakan hubungi admin sebelum membuat ulang pesanan.");
+          // Simpan sesi chat (riwayat pesanan tetap bisa dibuka lewat widget), lalu ke halaman invoice.
+          if (window.FdvChat && window.FdvChat.saveSession) window.FdvChat.saveSession({ token: r.token, name: name, phone: phone });
+          location.href = r.redirectUrl;
         }).catch(function (err) {
           submitBtn.disabled = false;
           submitBtn.firstChild.textContent = "Lanjutkan";
-          showErr(err.message === "Failed to fetch" ? "Tidak dapat terhubung ke server. Coba lagi." : err.message);
+          showErr(err.message === "Failed to fetch" ? "Koneksi gagal. Silakan coba lagi." : err.message);
         });
       });
       document.body.appendChild(overlay);

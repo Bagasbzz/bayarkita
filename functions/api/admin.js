@@ -16,10 +16,12 @@ import { complete, scheduleAiReply } from '../_lib/ai.js';
 import {
   createSession, destroySession, currentAdmin, requireAdmin, assertLoginAllowed, recordLoginFail, clearLoginFails,
 } from '../_lib/auth.js';
+import { ORDER_STATUSES, STATUS_LABELS, accountsError } from '../_lib/payment.js';
+import { qrisError } from '../_lib/qris.js';
 
-const ORDER_STATUSES = ['baru', 'diproses', 'selesai', 'batal'];
-const STATUS_LABELS = { baru: 'Baru', diproses: 'Diproses', selesai: 'Selesai', batal: 'Dibatalkan' };
-const NUMERIC_SETTINGS = ['fee_idr_base', 'fee_idr_pct', 'fee_usd_min', 'fee_usd_min_threshold', 'fee_usd_base', 'fee_usd_pct', 'min_order_idr', 'min_order_usd', 'ai_enabled', 'ai_delay_min', 'ai_delay_max', 'ai_queue_min', 'ai_queue_max'];
+const NUMERIC_SETTINGS = ['fee_idr_base', 'fee_idr_pct', 'fee_usd_min', 'fee_usd_min_threshold', 'fee_usd_base', 'fee_usd_pct', 'min_order_idr', 'min_order_usd', 'ai_enabled', 'ai_delay_min', 'ai_delay_max', 'ai_queue_min', 'ai_queue_max', 'qris_max', 'invoice_hours'];
+// Aksi yang mengubah data wajib POST (+ header X-Requested-With dari requireAdmin) agar tidak bisa dipicu lewat link GET (CSRF).
+const WRITE_ACTIONS = new Set(['reply', 'conv_ai', 'ai_test', 'conv_status', 'conv_delete', 'order_status', 'order_note', 'order_delete', 'service_save', 'service_toggle', 'service_delete', 'service_sort', 'settings_save', 'password']);
 
 const q = (url, key, def = '') => url.searchParams.get(key) ?? def;
 const intParam = (ctx, key) => parseInt(param(ctx, key, 0), 10) || 0;
@@ -46,6 +48,7 @@ export async function onRequest({ data, env }) {
     return ok({ admin: { id: Number(row.id), username: row.username } }, cookie);
   }
   if (action === 'logout') {
+    requirePost(ctx);
     return ok({}, await destroySession(ctx));
   }
   if (action === 'me') {
@@ -55,6 +58,7 @@ export async function onRequest({ data, env }) {
   }
 
   const admin = await requireAdmin(ctx);
+  if (WRITE_ACTIONS.has(action)) requirePost(ctx);
   await setSetting(db, 'admin_last_seen', now()); // dipakai widget untuk indikator "admin online"
 
   switch (action) {
@@ -65,10 +69,10 @@ export async function onRequest({ data, env }) {
       const one = async (sql, ...p) => db.prepare(sql).bind(...p).first('v');
       const byStatus = (await db.prepare('SELECT status, COUNT(*) c, COALESCE(SUM(total),0) t, COALESCE(SUM(fee),0) f FROM orders GROUP BY status').all()).results;
       const recent = (await db.prepare('SELECT id, code, service_name, plan, customer_name, phone, total, currency, amount, status, created_at FROM orders ORDER BY id DESC LIMIT 8').all()).results;
-      // Omzet 14 hari terakhir (pesanan selesai + diproses)
+      // Omzet 14 hari terakhir untuk pesanan yang sudah dibayar.
       const daily = {};
       for (let i = 13; i >= 0; i--) daily[daysAgo(i)] = { total: 0, fee: 0, count: 0 };
-      const rows = (await db.prepare("SELECT created_at, total, fee FROM orders WHERE status IN ('diproses','selesai') AND created_at >= ?").bind(daysAgo(13) + ' 00:00:00').all()).results;
+      const rows = (await db.prepare("SELECT created_at, total, fee FROM orders WHERE status IN ('dibayar','diproses','selesai') AND created_at >= ?").bind(daysAgo(13) + ' 00:00:00').all()).results;
       for (const r of rows) {
         const d = String(r.created_at).slice(0, 10);
         if (daily[d]) { daily[d].total += Number(r.total); daily[d].fee += Number(r.fee); daily[d].count++; }
@@ -77,8 +81,8 @@ export async function onRequest({ data, env }) {
       return ok({
         orders_today: Number(await one('SELECT COUNT(*) v FROM orders WHERE created_at >= ?', t0)),
         orders_month: Number(await one('SELECT COUNT(*) v FROM orders WHERE created_at >= ?', m0)),
-        orders_new: Number(await one("SELECT COUNT(*) v FROM orders WHERE status = 'baru'")),
-        orders_processing: Number(await one("SELECT COUNT(*) v FROM orders WHERE status = 'diproses'")),
+        orders_new: Number(await one("SELECT COUNT(*) v FROM orders WHERE status = 'baru' AND (expires_at IS NULL OR expires_at >= ?)", now())),
+        orders_processing: Number(await one("SELECT COUNT(*) v FROM orders WHERE status IN ('dibayar','diproses')")),
         revenue_month: Number(await one("SELECT COALESCE(SUM(total),0) v FROM orders WHERE status = 'selesai' AND created_at >= ?", m0)),
         fee_month: Number(await one("SELECT COALESCE(SUM(fee),0) v FROM orders WHERE status = 'selesai' AND created_at >= ?", m0)),
         unread_chats: Number(await one('SELECT COUNT(*) v FROM conversations WHERE unread_admin > 0')),
@@ -170,11 +174,11 @@ export async function onRequest({ data, env }) {
       const page = Math.max(1, parseInt(q(url, 'page', '1'), 10) || 1);
       const per = 25;
       const where = []; const p = [];
-      if (ORDER_STATUSES.includes(status)) { where.push('status = ?'); p.push(status); }
-      if (qs) { where.push('(code LIKE ? OR customer_name LIKE ? OR phone LIKE ? OR service_name LIKE ?)'); p.push(`%${qs}%`, `%${qs}%`, `%${qs}%`, `%${qs}%`); }
+      if (ORDER_STATUSES.includes(status)) { where.push('o.status = ?'); p.push(status); }
+      if (qs) { where.push('(o.code LIKE ? OR o.customer_name LIKE ? OR o.phone LIKE ? OR o.customer_email LIKE ? OR o.service_name LIKE ?)'); p.push(`%${qs}%`, `%${qs}%`, `%${qs}%`, `%${qs}%`, `%${qs}%`); }
       const w = where.length ? ' WHERE ' + where.join(' AND ') : '';
-      const total = Number(await db.prepare(`SELECT COUNT(*) v FROM orders${w}`).bind(...p).first('v'));
-      const rows = (await db.prepare(`SELECT * FROM orders${w} ORDER BY id DESC LIMIT ? OFFSET ?`).bind(...p, per, (page - 1) * per).all()).results;
+      const total = Number(await db.prepare(`SELECT COUNT(*) v FROM orders o${w}`).bind(...p).first('v'));
+      const rows = (await db.prepare(`SELECT o.*, g.member_count AS po_member_count, g.target_size AS po_target_size, g.deadline_at AS po_deadline_at, g.status AS po_status FROM orders o LEFT JOIN po_groups g ON g.id = o.po_group_id${w} ORDER BY o.id DESC LIMIT ? OFFSET ?`).bind(...p, per, (page - 1) * per).all()).results;
       return ok({ orders: rows, total, page, pages: Math.max(1, Math.ceil(total / per)) });
     }
 
@@ -185,7 +189,8 @@ export async function onRequest({ data, env }) {
       if (!ORDER_STATUSES.includes(status)) fail('Status tidak valid.');
       const o = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(id).first();
       if (!o) fail('Pesanan tidak ditemukan.', 404);
-      await db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').bind(status, now(), id).run();
+      const paidAt = ['dibayar', 'diproses', 'selesai'].includes(status) ? (o.paid_at || now()) : null;
+      await db.prepare('UPDATE orders SET status = ?, paid_at = ?, updated_at = ? WHERE id = ?').bind(status, paidAt, now(), id).run();
       if (o.status !== status) {
         const text = `Status pesanan #${o.code} diperbarui menjadi: ${STATUS_LABELS[status]}.` + (note ? `\n${note}` : '');
         await addMessage(db, Number(o.conversation_id), 'system', text, { type: 'status', order_id: id, code: o.code, status });
@@ -207,10 +212,10 @@ export async function onRequest({ data, env }) {
 
     case 'export_orders': {
       const rows = (await db.prepare('SELECT * FROM orders ORDER BY id DESC').all()).results;
-      const head = ['Kode', 'Tanggal', 'Pelanggan', 'WhatsApp', 'Layanan', 'Paket', 'Jumlah', 'Mata Uang', 'Kurs', 'Nominal IDR', 'Fee', 'Total', 'Status', 'Catatan'];
+      const head = ['Kode', 'Tanggal', 'Pelanggan', 'WhatsApp', 'Email Undangan', 'Layanan', 'Paket', 'Jumlah', 'Mata Uang', 'Kurs', 'Nominal IDR', 'Fee', 'Total', 'Status', 'Catatan'];
       const lines = [head.map(csvCell).join(',')];
       for (const o of rows) {
-        lines.push([o.code, o.created_at, o.customer_name, o.phone, o.service_name, o.plan, o.amount, o.currency, o.rate, o.amount_idr, o.fee, o.total, o.status, o.note].map(csvCell).join(','));
+        lines.push([o.code, o.created_at, o.customer_name, o.phone, o.customer_email || '', o.service_name, o.plan, o.amount, o.currency, o.rate, o.amount_idr, o.fee, o.total, o.status, o.note].map(csvCell).join(','));
       }
       const stamp = now().replace(/[-:]/g, '').replace(' ', '-');
       return new Response('\uFEFF' + lines.join('\r\n'), {
@@ -286,9 +291,17 @@ export async function onRequest({ data, env }) {
         const isRate = /^rate_[A-Z]{3}$/.test(k);
         if (!allowed.includes(k) && !isRate) continue;
         let v = raw;
+        if (String(v).length > 2000) fail(`Nilai ${k} terlalu panjang (maksimum 2000 karakter).`);
+        if (k === 'qris_payload') {
+          v = String(v || '').trim();
+          if (v && qrisError(v)) fail(qrisError(v));
+        }
+        if (k === 'payment_accounts' && accountsError(v)) fail(accountsError(v));
         if (isRate || NUMERIC_SETTINGS.includes(k)) {
           const n = Number(v);
           if (v === '' || v === null || !Number.isFinite(n) || n < 0) fail(`Nilai ${k} harus angka.`);
+          if (k === 'invoice_hours' && (n < 1 || n > 168)) fail('Masa berlaku invoice harus 1 sampai 168 jam.');
+          if (k === 'rate_USD' && n <= 0) fail('Kurs USD harus lebih besar dari 0.');
           v = String(n);
         }
         stmts.push(db.prepare('INSERT INTO settings (skey, svalue) VALUES (?,?) ON CONFLICT(skey) DO UPDATE SET svalue = excluded.svalue').bind(k, String(v).slice(0, 2000)));

@@ -1,4 +1,4 @@
-/* Admin dashboard Fahmidev — memakai token desain situs (styles.css) */
+/* Admin dashboard BayarKita — memakai token desain situs (styles.css) */
 :root{--admin-bg:#f4f6fa;--admin-sidebar:250px;--admin-radius:16px;--admin-shadow:0 10px 30px #0f172a0d}
 body.admin-body{background:var(--admin-bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 body.admin-body [hidden]{display:none!important}
@@ -8,25 +8,25 @@ body.admin-body [hidden]{display:none!important}
 .admin-btn{cursor:pointer;border:1px solid var(--border);border-radius:999px;justify-content:center;align-items:center;gap:8px;min-height:42px;padding:0 20px;font-size:14px;font-weight:900;line-height:1;text-decoration:none;display:inline-flex;transition:transform .18s,box-shadow .18s,background .18s,color .18s;white-space:nowrap}
 .admin-btn:hover{transform:translateY(-1px)}
 .admin-btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
-.admin-btn-primary{color:#fff;background:linear-gradient(135deg,var(--red),var(--red-dark));border-color:transparent;box-shadow:0 12px 26px #d90d1933}
-.admin-btn-primary:hover{box-shadow:0 14px 30px #d90d194d}
+.admin-btn-primary{color:#fff;background:linear-gradient(135deg,var(--red),var(--red-dark));border-color:transparent;box-shadow:0 12px 26px #f9731633}
+.admin-btn-primary:hover{box-shadow:0 14px 30px #f973164d}
 .admin-btn-ghost{color:var(--text);background:#fff}
-.admin-btn-ghost:hover{border-color:#d90d1966;color:var(--red)}
-.admin-btn-danger{color:var(--red);background:#fff3f3;border-color:#d90d1933}
+.admin-btn-ghost:hover{border-color:#f9731666;color:var(--red)}
+.admin-btn-danger{color:var(--red);background:#fff7ed;border-color:#f9731633}
 .admin-btn-sm{min-height:34px;padding:0 14px;font-size:13px}
 .admin-btn b{color:#fff;background:var(--red);border-radius:999px;min-width:20px;padding:2px 6px;font-size:11px;line-height:1.2;text-align:center}
 .admin-icon-btn{color:var(--muted);cursor:pointer;background:#fff;border:1px solid var(--border);border-radius:10px;place-items:center;width:40px;height:40px;display:grid;transition:color .18s,border-color .18s,background .18s}
 .admin-icon-btn svg{width:20px;height:20px}
-.admin-icon-btn:hover{color:var(--red);border-color:#d90d1966}
+.admin-icon-btn:hover{color:var(--red);border-color:#f9731666}
 .admin-icon-btn[aria-pressed=false]{color:#b7bfcc;text-decoration:line-through}
 .admin-link{color:var(--red);font-size:13px;font-weight:900;text-decoration:none}
 .admin-link:hover{text-decoration:underline}
 
 /* ---------- Login ---------- */
-.admin-login{background:radial-gradient(circle at 14% 20%,#ffffff33,#0000 24%),radial-gradient(circle at 82% 12%,#ffffff26,#0000 21%),linear-gradient(135deg,#ef2231 0%,#d90d19 48%,#b60814 100%);place-items:center;min-height:100vh;padding:24px;display:grid;position:relative}
+.admin-login{background:radial-gradient(circle at 14% 20%,#ffffff33,#0000 24%),radial-gradient(circle at 82% 12%,#ffffff26,#0000 21%),linear-gradient(135deg,#fb923c 0%,#f97316 48%,#c2410c 100%);place-items:center;min-height:100vh;padding:24px;display:grid;position:relative}
 .admin-login:before{content:"";pointer-events:none;background-image:radial-gradient(#ffffff38 .7px,#0000 1.15px),radial-gradient(#ffffff1a .65px,#0000 1.1px);background-position:0 0,19px 17px;background-size:28px 28px,42px 42px;position:absolute;inset:0}
 .admin-login-card{background:#fff;border-radius:22px;gap:14px;width:min(100%,400px);padding:36px 32px;display:grid;position:relative;box-shadow:0 30px 80px #4a030b4d}
-.admin-login-logo{background:#fff3f3;border-radius:999px;place-items:center;width:64px;height:64px;margin:0 auto 4px;display:grid}
+.admin-login-logo{background:#fff7ed;border-radius:999px;place-items:center;width:64px;height:64px;margin:0 auto 4px;display:grid}
 .admin-login-logo img{width:38px;height:38px}
 .admin-login-card h1{text-align:center;font-size:24px;font-weight:950;letter-spacing:-.02em;margin:0}
 .admin-login-card p{color:var(--muted);text-align:center;margin:-6px 0 6px;font-size:14px;font-weight:600;line-height:1.5}
@@ -43,7 +43,7 @@ body.admin-body [hidden]{display:none!important}
 .admin-nav a{color:var(--muted);border-radius:12px;align-items:center;gap:12px;padding:12px 14px;font-size:14px;font-weight:800;text-decoration:none;display:flex;transition:background .18s,color .18s}
 .admin-nav a svg{flex:none;width:20px;height:20px}
 .admin-nav a:hover{background:#f4f6fa;color:var(--text)}
-.admin-nav a.is-active{color:var(--red);background:#fff3f3}
+.admin-nav a.is-active{color:var(--red);background:#fff7ed}
 .admin-nav-badge{color:#fff;background:var(--red);border-radius:999px;min-width:22px;margin-left:auto;padding:3px 7px;font-size:11px;font-weight:900;text-align:center;line-height:1.2}
 .admin-sidebar-foot{border-top:1px solid var(--border);align-items:center;gap:10px;padding-top:16px;display:flex}
 .admin-user{min-width:0;flex:1;display:grid}
@@ -69,7 +69,7 @@ body.admin-body [hidden]{display:none!important}
 /* ---------- Statistik ---------- */
 .admin-stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;display:grid}
 .admin-stat{background:#fff;border:1px solid var(--border);border-radius:var(--admin-radius);grid-template-columns:48px 1fr;align-items:center;gap:14px;padding:18px 20px;display:grid;box-shadow:var(--admin-shadow)}
-.admin-stat-icon{color:var(--red);background:#fff3f3;border-radius:12px;place-items:center;width:48px;height:48px;display:grid}
+.admin-stat-icon{color:var(--red);background:#fff7ed;border-radius:12px;place-items:center;width:48px;height:48px;display:grid}
 .admin-stat-icon svg{width:24px;height:24px}
 .admin-stat small{color:var(--muted);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;display:block}
 .admin-stat strong{font-size:22px;font-weight:950;letter-spacing:-.02em;line-height:1.2;display:block;margin-top:2px}
@@ -90,11 +90,11 @@ body.admin-body [hidden]{display:none!important}
 .admin-top{gap:12px;display:grid}
 .admin-top-row{align-items:center;gap:12px;display:grid;grid-template-columns:36px 1fr auto}
 .admin-top-row img{width:36px;height:36px;object-fit:contain;border-radius:8px;background:#f4f6fa;padding:4px}
-.admin-top-row .admin-top-ph{color:var(--red);background:#fff3f3;border-radius:8px;place-items:center;width:36px;height:36px;font-size:13px;font-weight:950;display:grid}
+.admin-top-row .admin-top-ph{color:var(--red);background:#fff7ed;border-radius:8px;place-items:center;width:36px;height:36px;font-size:13px;font-weight:950;display:grid}
 .admin-top-row b{font-size:14px;font-weight:900;display:block}
 .admin-top-row small{color:var(--muted);font-size:12px;font-weight:700}
 .admin-top-row .admin-top-bar{background:#f1f4f8;border-radius:999px;height:6px;margin-top:6px;overflow:hidden}
-.admin-top-row .admin-top-bar i{background:linear-gradient(90deg,var(--red),#ff4b54);height:100%;display:block;border-radius:999px}
+.admin-top-row .admin-top-bar i{background:linear-gradient(90deg,var(--red),#fb923c);height:100%;display:block;border-radius:999px}
 .admin-top-row strong{font-size:14px;font-weight:950;white-space:nowrap}
 
 /* ---------- Tabel ---------- */
@@ -117,9 +117,10 @@ body.admin-body [hidden]{display:none!important}
 /* Badge status */
 .admin-status{border-radius:999px;padding:4px 10px;font-size:11.5px;font-weight:900;text-transform:capitalize;display:inline-block;white-space:nowrap}
 .admin-status.is-baru{color:#1261d8;background:#e8f0fe}
+.admin-status.is-dibayar{color:#15803d;background:#dcfce7}
 .admin-status.is-diproses{color:#b45309;background:#fef3c7}
 .admin-status.is-selesai{color:#15803d;background:#dcfce7}
-.admin-status.is-batal{color:var(--red);background:#fff3f3}
+.admin-status.is-batal{color:var(--red);background:#fff7ed}
 .admin-status.is-open{color:#15803d;background:#dcfce7}
 .admin-status.is-closed{color:var(--muted);background:#f1f4f8}
 
@@ -141,9 +142,9 @@ body.admin-body [hidden]{display:none!important}
 .admin-form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;display:grid}
 .admin-form input,.admin-form textarea,.admin-form select,.admin-modal input,.admin-modal textarea,.admin-modal select,.admin-rate-add input{background:#f8fafc;border:1px solid var(--border);border-radius:12px;width:100%;min-height:44px;padding:10px 14px;font-size:14px;font-weight:600;transition:border-color .18s,box-shadow .18s,background .18s}
 .admin-form textarea,.admin-modal textarea{min-height:unset;resize:vertical;line-height:1.5}
-.admin-form input:focus,.admin-form textarea:focus,.admin-modal input:focus,.admin-modal textarea:focus,.admin-modal select:focus,.admin-rate-add input:focus{background:#fff;border-color:var(--red);outline:0;box-shadow:0 0 0 4px #d90d1914}
+.admin-form input:focus,.admin-form textarea:focus,.admin-modal input:focus,.admin-modal textarea:focus,.admin-modal select:focus,.admin-rate-add input:focus{background:#fff;border-color:var(--red);outline:0;box-shadow:0 0 0 4px #f9731614}
 .admin-form .admin-btn{justify-self:start}
-.admin-preview{color:var(--text);background:#fff3f3;border:1px dashed #d90d1940;border-radius:12px;padding:12px 14px;font-size:13px;font-weight:700;line-height:1.6}
+.admin-preview{color:var(--text);background:#fff7ed;border:1px dashed #f9731640;border-radius:12px;padding:12px 14px;font-size:13px;font-weight:700;line-height:1.6}
 .admin-preview b{color:var(--red);font-weight:950}
 .admin-rate-field{position:relative}
 .admin-rate-field button{color:var(--muted);cursor:pointer;background:none;border:0;font-size:11px;font-weight:900;position:absolute;top:0;right:0}
@@ -159,7 +160,7 @@ body.admin-body [hidden]{display:none!important}
 .admin-conv-items{min-height:0;overflow-y:auto;overscroll-behavior:contain}
 .admin-conv{cursor:pointer;border-bottom:1px solid #f1f4f8;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;padding:12px 14px;text-align:left;background:#fff;border-left:3px solid transparent;display:grid;transition:background .15s}
 .admin-conv:hover{background:#fafbfd}
-.admin-conv.is-active{background:#fff3f3;border-left-color:var(--red)}
+.admin-conv.is-active{background:#fff7ed;border-left-color:var(--red)}
 .admin-conv.is-unread b{color:var(--text)}
 .admin-conv-main{min-width:0}
 .admin-conv-main b{font-size:14px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
@@ -192,7 +193,7 @@ body.admin-body [hidden]{display:none!important}
 .admin-thread-compose{background:#fff;border-top:1px solid var(--border);gap:10px;padding:12px 16px;display:grid}
 .admin-quick{gap:6px;display:flex;flex-wrap:wrap}
 .admin-quick:empty{display:none}
-.admin-quick button{color:var(--red);cursor:pointer;background:#fff3f3;border:1px solid #d90d1926;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:800;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:all .18s}
+.admin-quick button{color:var(--red);cursor:pointer;background:#fff7ed;border:1px solid #f9731626;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:800;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:all .18s}
 .admin-quick button:hover{background:var(--red);color:#fff}
 
 /* Bubble chat (versi admin dari chat.css; sisi admin di kanan) */
@@ -203,14 +204,15 @@ body.admin-body [hidden]{display:none!important}
 .webchat-msg.is-admin{justify-self:end}
 .webchat-msg.is-customer,.webchat-msg.is-system{justify-self:start}
 .webchat-bubble{color:var(--text);white-space:pre-wrap;word-break:break-word;background:#fff;border:1px solid var(--border);border-radius:14px 14px 14px 4px;padding:10px 13px;font-size:14px;line-height:1.5;box-shadow:0 6px 16px #1118270a}
-.webchat-msg.is-admin .webchat-bubble{color:#fff;background:linear-gradient(135deg,var(--red),var(--red-dark));border:0;border-radius:14px 14px 4px 14px;box-shadow:0 10px 22px #d90d192e}
-.webchat-msg.is-system .webchat-bubble{color:#172033;background:#fff3f3;border-color:#d90d1926}
+.webchat-msg.is-admin .webchat-bubble{color:#fff;background:linear-gradient(135deg,var(--red),var(--red-dark));border:0;border-radius:14px 14px 4px 14px;box-shadow:0 10px 22px #f973162e}
+.webchat-msg.is-system .webchat-bubble{color:#172033;background:#fff7ed;border-color:#f9731626}
 .webchat-time{color:#9aa3b2;font-size:11px;font-weight:700;padding:0 4px}
 .webchat-msg.is-admin .webchat-time{text-align:right}
-.webchat-order{background:#fff;border:1px solid #d90d1947;border-left:4px solid var(--red);border-radius:12px;width:100%;min-width:250px;overflow:hidden;box-shadow:0 8px 20px #d90d1914}
-.webchat-order-head{color:#172033;background:linear-gradient(90deg,#d90d1914,#d90d1905);align-items:center;gap:10px;padding:10px 14px;font-size:13px;font-weight:900;display:flex;white-space:nowrap}
+.webchat-order{background:#fff;border:1px solid #f9731647;border-left:4px solid var(--red);border-radius:12px;width:100%;min-width:0;overflow:hidden;box-shadow:0 8px 20px #f9731614}
+.webchat-order-head{color:#172033;background:linear-gradient(90deg,#f9731614,#f9731605);align-items:start;gap:8px 10px;padding:10px 14px;font-size:13px;font-weight:900;display:grid;grid-template-columns:18px minmax(0,1fr)}
+.webchat-order-head>span{min-width:0;overflow-wrap:anywhere}
 .webchat-order-head svg{color:var(--red);flex:none;width:18px;height:18px}
-.webchat-order-head small{color:var(--muted);margin-left:auto;font-size:11px;font-weight:800}
+.webchat-order-head small{color:var(--muted);grid-column:2;font-size:11px;font-weight:800}
 .webchat-order-rows{gap:6px;padding:12px 14px;display:grid}
 .webchat-order-rows div{color:var(--muted);justify-content:space-between;gap:12px;font-size:13px;font-weight:700;display:flex}
 .webchat-order-rows div b{color:#172033;text-align:right;font-weight:900}
@@ -220,9 +222,9 @@ body.admin-body [hidden]{display:none!important}
 .webchat-pill.is-baru{color:#1261d8;background:#1261d81a}
 .webchat-pill.is-diproses{color:#b45309;background:#f59e0b24}
 .webchat-pill.is-selesai{color:#15803d;background:#22c55e24}
-.webchat-pill.is-batal{color:var(--red);background:#d90d191a}
+.webchat-pill.is-batal{color:var(--red);background:#f973161a}
 .webchat-compose{background:#f8fafc;border:1px solid var(--border);border-radius:14px;align-items:end;gap:8px;padding:6px 6px 6px 14px;display:flex;transition:border-color .18s,box-shadow .18s}
-.webchat-compose:focus-within{border-color:var(--red);box-shadow:0 0 0 4px #d90d1914;background:#fff}
+.webchat-compose:focus-within{border-color:var(--red);box-shadow:0 0 0 4px #f9731614;background:#fff}
 .webchat-compose textarea{background:none;border:0;flex:1;max-height:140px;min-height:24px;padding:8px 0;font-size:14px;font-weight:600;line-height:1.45;resize:none;outline:0}
 .webchat-send{color:#fff;cursor:pointer;background:linear-gradient(135deg,var(--red),var(--red-dark));border:0;border-radius:10px;place-items:center;width:40px;height:40px;display:grid;transition:opacity .18s,transform .18s;flex:none}
 .webchat-send:disabled{opacity:.45;cursor:not-allowed}

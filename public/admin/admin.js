@@ -1,4 +1,4 @@
-/* Admin dashboard Fahmidev — SPA tanpa dependensi, bicara ke /api/admin (Cloudflare Pages Functions) */
+/* Admin dashboard BayarKita — SPA tanpa dependensi, bicara ke /api/admin (Cloudflare Pages Functions) */
 (function () {
   "use strict";
 
@@ -35,7 +35,7 @@
     if (diff === 1) return "Kemarin";
     return d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
   };
-  var STATUS = { baru: "Baru", diproses: "Diproses", selesai: "Selesai", batal: "Dibatalkan" };
+  var STATUS = { baru: "Menunggu Pembayaran", dibayar: "Dibayar", diproses: "Diproses", selesai: "Selesai", batal: "Dibatalkan" };
   var initials = function (name) { return String(name || "?").trim().split(/\s+/).slice(0, 2).map(function (w) { return w[0] || ""; }).join("").toUpperCase() || "?"; };
   var waLink = function (phone) { return "https://wa.me/" + String(phone || "").replace(/\D/g, ""); };
 
@@ -110,7 +110,7 @@
   };
   var notify = function (title, body) {
     if (!("Notification" in window) || document.hasFocus()) return;
-    if (Notification.permission === "granted") { try { new Notification(title, { body: body, icon: "../assets/logo-fahmidev.svg" }); } catch (e) { /* abaikan */ } }
+    if (Notification.permission === "granted") { try { new Notification(title, { body: body, icon: "../assets/logo-bayarkita.svg" }); } catch (e) { /* abaikan */ } }
   };
   var requestNotif = function () { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); };
 
@@ -119,7 +119,7 @@
   var showLogin = function () {
     stopAllPolling();
     $("app").hidden = true; $("login").hidden = false;
-    document.title = "Masuk Admin - Fahmidev";
+    document.title = "Masuk Admin - BayarKita";
     setTimeout(function () { var i = qs('input[name=username]', $("login-form")); if (i) i.focus(); }, 30);
   };
   var showApp = function (admin) {
@@ -155,7 +155,7 @@
     qsa(".admin-view").forEach(function (v) { v.hidden = v.dataset.view !== view; });
     qsa(".admin-nav a").forEach(function (a) { a.classList.toggle("is-active", a.dataset.view === view); });
     $("view-title").textContent = TITLES[view];
-    document.title = TITLES[view] + " - Admin Fahmidev";
+    document.title = TITLES[view] + " - Admin BayarKita";
     toggleSidebar(false);
     stopThreadPolling(); clearInterval(state.conv.listTimer); state.conv.listTimer = null;
     if (view === "dashboard") loadDashboard();
@@ -396,29 +396,46 @@
   var openOrderDetail = function (o) {
     openModal('<h2>Pesanan #' + esc(o.code) + '</h2><div class="admin-order-detail">' +
       "<div><span>Pelanggan</span><b>" + esc(o.customer_name) + "<br><small>" + esc(o.phone) + "</small></b></div>" +
+      (o.customer_email ? "<div><span>Email undangan</span><b>" + esc(o.customer_email) + "</b></div>" : "") +
       "<div><span>Layanan</span><b>" + esc(o.service_name) + (o.plan ? " · " + esc(o.plan) : "") + "</b></div>" +
       "<div><span>Nominal</span><b>" + fmtAmount(o.amount, o.currency) + (o.currency !== "IDR" ? " ≈ " + fmtRp(o.amount_idr) + " (kurs " + Number(o.rate).toLocaleString("id-ID") + ")" : "") + "</b></div>" +
       "<div><span>Fee</span><b>" + fmtRp(o.fee) + "</b></div><div><span>Total</span><b>" + fmtRp(o.total) + "</b></div>" +
       '<div><span>Status</span><b><span class="admin-status is-' + esc(o.status) + '">' + (STATUS[o.status] || o.status) + "</span></b></div>" +
-      "<div><span>Dibuat</span><b>" + fmtDateTime(o.created_at) + "</b></div></div>" +
+      "<div><span>Dibuat</span><b>" + fmtDateTime(o.created_at) + "</b></div>" +
+      (o.expires_at ? "<div><span>Batas bayar</span><b>" + fmtDateTime(o.expires_at) + "</b></div>" : "") +
+      (o.paid_at ? "<div><span>Dikonfirmasi</span><b>" + fmtDateTime(o.paid_at) + "</b></div>" : "") + '</div>' +
+      (o.po_group_id ? '<div class="admin-po-summary"><strong>PO plan umum: ' + esc(String(o.po_member_count || 0)) + '/' + esc(String(o.po_target_size || 4)) + ' peserta</strong><span>Batas pengumpulan: ' + esc(fmtDateTime(o.po_deadline_at)) + '</span></div>' : '') +
+      (o.po_group_id && o.po_status === "expired" ? '<p class="admin-warning">PO melewati batas 7 hari dan belum penuh. Hubungi peserta untuk memproses refund manual.</p>' : "") +
+      '<p><a class="admin-link" target="_blank" rel="noreferrer" href="/inv/' + encodeURIComponent(o.code) + '">Buka invoice</a></p>' +
+      (o.status === "baru" ? '<button class="admin-btn admin-btn-primary" id="confirm-payment" type="button">Konfirmasi pembayaran diterima</button>' : "") +
       '<form id="note-form"><label>Catatan internal (tidak terlihat pelanggan)<textarea name="note" rows="3">' + esc(o.note || "") + '</textarea></label><div class="admin-modal-actions"><a class="admin-btn admin-btn-ghost" href="#inbox/' + o.conversation_id + '">Buka chat</a><button class="admin-btn admin-btn-primary" type="submit">Simpan catatan</button></div></form>');
     qs("#note-form", modalBody).addEventListener("submit", function (e) {
       e.preventDefault();
       api("order_note", { id: o.id, note: e.target.note.value }).then(function () { toast("Catatan disimpan.", "success"); closeModal(); loadOrders(); }).catch(function (ex) { toast(ex.message, "error"); });
     });
     qs("a.admin-btn", modalBody).addEventListener("click", closeModal);
+    var confirmPayment = qs("#confirm-payment", modalBody);
+    if (confirmPayment) confirmPayment.onclick = function () {
+      confirmModal("Konfirmasi pembayaran?", "Pastikan dana " + fmtRp(o.total) + " untuk invoice " + o.code + " benar-benar sudah masuk ke rekening Anda. Membuka WhatsApp atau mengirim bukti bukan konfirmasi penerimaan dana.", "Ya, dana sudah masuk", false).then(function (confirmed) {
+        if (!confirmed) return;
+        api("order_status", { id: o.id, status: "dibayar", message: "Pembayaran sudah kami terima. Pesanan akan segera diproses." }).then(function () {
+          toast("Pembayaran dikonfirmasi.", "success"); loadOrders(); pollBadges();
+        }).catch(function (ex) { toast(ex.message, "error"); });
+      });
+    };
   };
   // Ubah status pesanan + pesan opsional ke chat pelanggan
   var changeOrderStatus = function (sel, done) {
     var id = parseInt(sel.dataset.order, 10), status = sel.value, prev = sel.dataset.current;
     if (status === prev) return;
     var defaults = {
+      dibayar: "Pembayaran sudah kami terima. Pesanan akan segera diproses.",
       diproses: "Pesanan Anda sedang kami proses. Mohon tunggu konfirmasi berikutnya ya.",
-      selesai: "Pesanan Anda telah selesai diproses. Terima kasih sudah menggunakan jasa Fahmidev!",
+      selesai: "Pesanan Anda telah selesai diproses. Terima kasih sudah menggunakan jasa BayarKita!",
       batal: "Mohon maaf, pesanan Anda dibatalkan. Silakan hubungi admin jika ada pertanyaan.",
       baru: ""
     };
-    openModal("<h2>Ubah status → " + STATUS[status] + '</h2><p class="admin-hint">Status baru akan muncul di chat pelanggan. Anda bisa menambahkan pesan (opsional), misalnya instruksi pembayaran.</p><form id="status-form"><label>Pesan untuk pelanggan<textarea name="message" rows="3">' + esc(defaults[status] || "") + '</textarea></label><div class="admin-modal-actions"><button class="admin-btn admin-btn-ghost" type="button" data-act="cancel">Batal</button><button class="admin-btn admin-btn-primary" type="submit">Simpan status</button></div></form>');
+    openModal("<h2>Ubah status: " + STATUS[status] + '</h2><p class="admin-hint">Status baru akan muncul di invoice dan chat pelanggan. Untuk Dibayar, Diproses, atau Selesai, pastikan dana benar-benar sudah masuk terlebih dahulu.</p><form id="status-form"><label>Pesan untuk pelanggan<textarea name="message" rows="3">' + esc(defaults[status] || "") + '</textarea></label><div class="admin-modal-actions"><button class="admin-btn admin-btn-ghost" type="button" data-act="cancel">Batal</button><button class="admin-btn admin-btn-primary" type="submit">Simpan status</button></div></form>');
     qs("[data-act=cancel]", modalBody).onclick = function () { sel.value = prev; closeModal(); };
     qs("#status-form", modalBody).addEventListener("submit", function (e) {
       e.preventDefault();
@@ -492,7 +509,7 @@
   };
 
   // ---------- Pengaturan ----------
-  var feeForm = $("fee-form"), rateForm = $("rate-form"), chatForm = $("chat-form"), pwForm = $("password-form");
+  var feeForm = $("fee-form"), rateForm = $("rate-form"), chatForm = $("chat-form"), pwForm = $("password-form"), paymentForm = $("payment-form");
   var loadSettings = function () {
     api("settings").then(function (j) {
       state.settings = j.settings;
@@ -500,6 +517,7 @@
       qsa("input", feeForm).forEach(function (i) { if (s[i.name] !== undefined) i.value = s[i.name]; });
       renderRates(s);
       qsa("input,textarea,select", chatForm).forEach(function (i) { if (s[i.name] !== undefined) i.value = s[i.name]; });
+      qsa("input,textarea", paymentForm).forEach(function (i) { if (s[i.name] !== undefined) i.value = s[i.name]; });
       pwForm.username.value = j.admin.username;
       feePreview();
     }).catch(function (ex) { if (ex.status !== 401) toast(ex.message, "error"); });
@@ -547,6 +565,7 @@
     return o;
   }));
   chatForm.addEventListener("submit", saveSettings(chatForm, function () { var o = {}; qsa("input,textarea,select", chatForm).forEach(function (i) { o[i.name] = i.value; }); return o; }));
+  paymentForm.addEventListener("submit", saveSettings(paymentForm, function () { var o = {}; qsa("input,textarea", paymentForm).forEach(function (i) { o[i.name] = i.value; }); return o; }));
   pwForm.addEventListener("submit", function (e) {
     e.preventDefault();
     api("password", { username: pwForm.username.value.trim(), old_password: pwForm.old_password.value, new_password: pwForm.new_password.value }).then(function () {

@@ -69,12 +69,39 @@ CREATE TABLE IF NOT EXISTS orders (
   amount_idr      REAL NOT NULL,
   fee             REAL NOT NULL,
   total           REAL NOT NULL,
-  status          TEXT NOT NULL DEFAULT 'baru',
+  status          TEXT NOT NULL DEFAULT 'baru',   -- baru (menunggu bayar) | dibayar | diproses | selesai | batal
   customer_name   TEXT NOT NULL,
   phone           TEXT NOT NULL,
   note            TEXT,
   created_at      TEXT NOT NULL,
+  updated_at      TEXT NOT NULL,
+  expires_at      TEXT,                          -- batas bayar invoice
+  paid_at         TEXT,                          -- waktu pembayaran dikonfirmasi admin
+  customer_email TEXT,                           -- email tujuan undangan seat (khusus admin)
+  product_key     TEXT,                           -- snapshot key paket promo seat/PO
+  po_group_id     INTEGER                         -- grup PO plan umum bila ada
+);
+
+CREATE TABLE IF NOT EXISTS po_groups (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  product_key     TEXT NOT NULL,
+  product_name    TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'open',
+  target_size     INTEGER NOT NULL DEFAULT 4,
+  member_count    INTEGER NOT NULL DEFAULT 0,
+  deadline_at     TEXT NOT NULL,
+  created_at      TEXT NOT NULL,
   updated_at      TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_po_open_product ON po_groups(product_key) WHERE status = 'open';
+CREATE TABLE IF NOT EXISTS po_group_members (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id    INTEGER NOT NULL,
+  order_id    INTEGER NOT NULL,
+  slot        INTEGER NOT NULL,
+  created_at  TEXT NOT NULL,
+  UNIQUE(group_id, order_id),
+  UNIQUE(group_id, slot)
 );
 
 -- Sesi login admin. Token disimpan sebagai hash SHA-256.
