@@ -74,6 +74,13 @@ export const today = () => now().slice(0, 10);
 export const daysAgo = (n) => fmtLocal(new Date(Date.now() - n * 86400000)).slice(0, 10);
 export const secondsAgo = (n) => fmtLocal(new Date(Date.now() - n * 1000));
 
+/** Parse cookie values without decoding arbitrary separators. */
+export function readCookie(request, name) {
+  const cookie = request.headers.get('Cookie') || '';
+  const entry = cookie.split(';').map((part) => part.trim()).find((part) => part.startsWith(`${name}=`));
+  return entry ? entry.slice(name.length + 1) : '';
+}
+
 /** Parse "YYYY-MM-DD HH:MM:SS" (lokal) ke epoch ms, cukup akurat untuk selisih detik. */
 export function parseLocal(s) {
   if (!s) return 0;

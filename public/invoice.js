@@ -1,5 +1,5 @@
 /* Halaman invoice /inv/{kode}: detail pesanan, metode pembayaran (rekening + QRIS dinamis),
-   konfirmasi via WhatsApp, dan polling status tiap 5 detik. */
+   konfirmasi lewat chat web, dan polling status tiap 5 detik. */
 (function () {
   "use strict";
 
@@ -28,7 +28,7 @@
     receipt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/></svg>',
     x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
     copy: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>',
-    wa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/></svg>'
+    chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/></svg>'
   };
 
   var order = null, active = null, pollTimer = null;
@@ -63,19 +63,19 @@
       "<div><span>Biaya Layanan:</span><b>" + fmtRp(order.fee) + "</b></div>" +
       '<div><span>Status:</span><b><span class="inv-pill is-' + esc(order.status) + '">' + esc(order.status_label) + "</span></b></div>" +
       '<div class="is-total"><span>Total Pembayaran:</span><b>' + fmtRp(order.total) + "</b></div>" +
-      (order.po ? '<div><span>Progress PO:</span><b>' + esc(order.po.member_count + '/' + order.po.target_size + ' peserta') + '</b></div><div><span>Batas pengumpulan:</span><b>' + esc(fmtExpiry(new Date(order.po.deadline_at.replace(" ", "T")).getTime())) + '</b></div>' : '') +
+      (order.po ? '<div><span>Peserta sudah membayar:</span><b>' + esc(order.po.paid_count + '/' + order.po.target_size + ' peserta') + '</b></div>' : '') +
       "</div></article>" +
-      (order.po ? '<article class="inv-card inv-po-notice"><strong>Pesanan Pre-Order (PO)</strong><p>PO baru dibeli setelah terkumpul 4 peserta. Waktu pengumpulan maksimal 7 hari sejak peserta pertama. Jika tidak penuh, admin membatalkan PO dan memproses refund secara manual melalui WhatsApp.</p><p>Opsi sharing berarti penggunaan satu akun bersama. Jangan mengirim atau menggunakan kata sandi yang dipakai pada akun pribadi lain.</p></article>' : '') +
+      (order.po ? '<article class="inv-card inv-po-notice"><strong>Grup Patungan ' + esc(order.po.product_name.replace(/^Patungan\s+/i, "")) + '</strong><p>Info grup ini hanya tersedia setelah pembayaran Anda tercatat. Berikut peserta yang pembayarannya sudah dikonfirmasi:</p><ul class="inv-po-members">' + order.po.paid_members.map(function (name) { return '<li>' + esc(name) + '</li>'; }).join('') + '</ul><p>Patungan diproses setelah empat peserta membayar. Batas pengumpulan maksimal tujuh hari sejak grup dibuka. Jika grup tidak terpenuhi, admin akan menghubungi peserta untuk tindak lanjut.</p><p>Opsi patungan memakai satu paket bersama. Jangan membagikan kata sandi akun pribadi Anda.</p></article>' : '') +
       '<article class="inv-card"><h2>Panduan Pembayaran</h2><ol class="inv-steps">' +
       "<li>Buka M-Banking / Internet Banking / e-wallet yang anda gunakan saat ini</li>" +
       "<li>Lakukan pembayaran ke Rekening / QRIS yang tersedia. Untuk QRIS, nominal sudah terisi otomatis saat di-scan</li>" +
-      "<li>Klik Konfirmasi Via WhatsApp setelah membayar</li>" +
+      "<li>Klik Konfirmasi di Chat Web setelah membayar</li>" +
       "<li>Setelah pembayaran masuk, admin akan segera memproses pesanan</li>" +
       "</ol></article></div>";
   };
 
   var methodBody = function (m) {
-    if (!m) return '<small>Metode pembayaran belum tersedia. Silakan hubungi admin via WhatsApp.</small>';
+    if (!m) return '<small>Metode pembayaran belum tersedia. Silakan hubungi admin lewat chat web.</small>';
     if (m.qris) {
       // QR dibuat server per invoice; hanya dimuat selama invoice masih bisa dibayar.
       var src = "/api/invoice?action=qris&code=" + encodeURIComponent(order.invoice);
@@ -105,15 +105,11 @@
     }).join("");
     var locked = !order.payable;
     var badge = order.confirmed ? "Pembayaran Sukses" : order.status === "batal" ? "Dibatalkan" : order.status === "kedaluwarsa" ? "Kedaluwarsa" : "";
-    var waText = cur
-      ? "Halo admin, saya sudah melakukan pembayaran untuk invoice " + order.invoice + " (" + order.service + ") atas nama " + order.name + "."
-      : "Halo admin, mohon informasi metode pembayaran untuk invoice " + order.invoice + " (" + order.service + ") atas nama " + order.name + ".";
-    var wa = order.wa_number ? "https://wa.me/" + order.wa_number + "?text=" + encodeURIComponent(waText) : "";
     return '<article class="inv-card"><h2>Metode Pembayaran</h2>' +
       (list.length ? '<div class="inv-tabs" aria-label="Pilih metode pembayaran">' + tabs + "</div>" : "") +
       '<div class="inv-method' + (locked ? " is-locked" + (order.confirmed ? "" : " is-dead") : "") + '">' + methodBody(cur) + (locked ? '<span class="inv-badge">' + esc(badge) + "</span>" : "") + "</div>" +
       '<div class="inv-total-bar"><span>Total Pembayaran</span><strong>' + fmtRp(order.total) + "</strong></div>" +
-      (order.payable && wa ? '<a class="inv-wa" target="_blank" rel="noreferrer" href="' + esc(wa) + '">' + ICON.wa + (cur ? "Konfirmasi Via WhatsApp" : "Hubungi Admin Via WhatsApp") + "</a>" : "") +
+      (order.payable ? '<button class="inv-wa inv-chat-confirm" type="button" data-chat-confirm>' + ICON.chat + "Konfirmasi Via Chat Web" + "</button>" : "") +
       (order.payable && order.expires_ts ? '<p class="inv-expiry">Berlaku sampai <b>' + esc(fmtExpiry(order.expires_ts)) + "</b></p>" : "") +
       "</article>";
   };
@@ -126,6 +122,16 @@
   root.addEventListener("click", function (e) {
     var tab = e.target.closest("[data-method]");
     if (tab && !tab.disabled) { active = tab.getAttribute("data-method"); render(); return; }
+    var confirm = e.target.closest("[data-chat-confirm]");
+    if (confirm) {
+      var chat = window.FdvChat;
+      if (chat && chat.openWithMessage) {
+        chat.openWithMessage("Halo admin, saya sudah melakukan pembayaran untuk invoice " + order.invoice + " (" + order.service + ") atas nama " + order.name + ". Mohon dicek ya.");
+      } else if (chat && chat.open) {
+        chat.open();
+      }
+      return;
+    }
     var cp = e.target.closest("[data-copy]");
     if (cp && order.payable && !cp.disabled) {
       var txt = cp.getAttribute("data-copy").replace(/\s+/g, "");
@@ -145,7 +151,9 @@
   var poll = function () {
     if (document.visibilityState !== "visible") return;
     fetch("/api/invoice?action=status&code=" + encodeURIComponent(code), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.ok || j.status === order.status) return;
+      if (!j || !j.ok) return;
+      var paidCountChanged = order.po && order.confirmed && j.groupPaidCount !== order.po.paid_count;
+      if (j.status === order.status && !paidCountChanged) return;
       return load().then(function (o) {
         order = o; render();
         if (order.status === "selesai" || order.status === "batal") clearInterval(pollTimer);

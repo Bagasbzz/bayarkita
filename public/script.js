@@ -1,6 +1,9 @@
 (function () {
   "use strict";
 
+  // Catat kunjungan tanpa mengirim URL, IP, atau identitas pribadi.
+  fetch("/api/visits", { method: "POST", credentials: "same-origin", headers: { "X-Requested-With": "fetch" }, keepalive: true }).catch(function () {});
+
   // Mobile navigation toggle
   var menuToggle = document.querySelector(".menu-toggle");
   var navPanel = document.querySelector(".nav-panel");
@@ -191,12 +194,12 @@
     var serviceSlug = (location.pathname.split("/").pop() || "").replace(/\.html$/, "");
     if (optionGrid && (serviceSlug === "claude" || serviceSlug === "chatgpt")) {
       var seatButtons = serviceSlug === "claude"
-        ? '<button data-amount="257000" data-currency="IDR" data-custom="false" data-product-key="claude-team-standard" aria-selected="false" role="tab" type="button">Team Standard Seat</button><button data-amount="812000" data-currency="IDR" data-custom="false" data-product-key="claude-team-premium" aria-selected="false" role="tab" type="button">Team Premium Seat</button><button data-amount="5.55" data-currency="USD" data-custom="false" data-po-key="claude-pro-po-4" aria-selected="false" role="tab" type="button">PO Claude Pro (1/4)</button>'
-        : '<button data-amount="58000" data-currency="IDR" data-custom="false" data-product-key="chatgpt-business-standard" aria-selected="false" role="tab" type="button">Business Standard Seat</button><button data-amount="316000" data-currency="IDR" data-custom="false" data-product-key="chatgpt-business-premium" aria-selected="false" role="tab" type="button">Business Premium Seat</button><button data-amount="87250" data-currency="IDR" data-custom="false" data-po-key="chatgpt-plus-po-4" aria-selected="false" role="tab" type="button">PO ChatGPT Plus (1/4)</button>';
+        ? '<button data-amount="257000" data-currency="IDR" data-custom="false" data-product-key="claude-team-standard" aria-selected="false" role="tab" type="button">Team Standard Seat</button><button data-amount="812000" data-currency="IDR" data-custom="false" data-product-key="claude-team-premium" aria-selected="false" role="tab" type="button">Team Premium Seat</button><button data-amount="5.55" data-currency="USD" data-custom="false" data-po-key="claude-pro-po-4" aria-selected="false" role="tab" type="button">Patungan Claude Pro (1/4)</button>'
+        : '<button data-amount="58000" data-currency="IDR" data-custom="false" data-product-key="chatgpt-business-standard" aria-selected="false" role="tab" type="button">Business Standard Seat</button><button data-amount="316000" data-currency="IDR" data-custom="false" data-product-key="chatgpt-business-premium" aria-selected="false" role="tab" type="button">Business Premium Seat</button><button data-amount="87250" data-currency="IDR" data-custom="false" data-po-key="chatgpt-plus-po-4" aria-selected="false" role="tab" type="button">Patungan ChatGPT Plus (1/4)</button>';
       var customTab = optionGrid.querySelector('[data-custom="true"]');
       if (customTab) {
         customTab.insertAdjacentHTML("beforebegin", seatButtons);
-        optionGrid.insertAdjacentHTML("afterend", '<p class="service-seat-note">Seat promo Business diundang ke email masing-masing tanpa fee. Opsi PO membeli paket umum dan menunggu empat peserta hingga tujuh hari; tiap peserta memakai email masing-masing dan dikenai biaya PO Rp5.000.</p>');
+        optionGrid.insertAdjacentHTML("afterend", '<section class="service-product-help" aria-live="polite" hidden><h3></h3><p></p><details><summary>Info selengkapnya</summary><div></div></details></section>');
       }
     }
     var tabs = Array.prototype.slice.call(orderCard.querySelectorAll(".service-option-grid button"));
@@ -214,6 +217,25 @@
       return sym + n.toLocaleString("en-US", { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 });
     };
     var state = { amount: 0, currency: "IDR", plan: "", productKey: "", poKey: "" };
+    var productHelp = orderCard.querySelector(".service-product-help");
+    var productHelpCopy = {
+      "claude-team-standard": ["Claude Team Standard Seat", "Seat Business khusus untuk satu pengguna, dengan undangan ke email Anda. Tidak ada fee seat.", "Masukkan email yang bisa menerima undangan Claude. Seat ini bukan bagian dari patungan dan tidak menunggu peserta lain. Harga yang ditampilkan adalah harga seat; total bayar tetap mengikuti ringkasan checkout."],
+      "claude-team-premium": ["Claude Team Premium Seat", "Seat Business Premium khusus untuk satu pengguna, dengan undangan ke email Anda. Tidak ada fee seat.", "Masukkan email yang bisa menerima undangan Claude. Seat ini bukan bagian dari patungan dan tidak menunggu peserta lain. Harga yang ditampilkan adalah harga seat; total bayar tetap mengikuti ringkasan checkout."],
+      "chatgpt-business-standard": ["ChatGPT Business Standard Seat", "Seat Business khusus untuk satu pengguna, dengan undangan ke email Anda. Tidak ada fee seat.", "Masukkan email yang bisa menerima undangan ChatGPT. Seat ini bukan bagian dari patungan dan tidak menunggu peserta lain. Harga yang ditampilkan adalah harga seat; total bayar tetap mengikuti ringkasan checkout."],
+      "chatgpt-business-premium": ["ChatGPT Business Premium Seat", "Seat Business Premium khusus untuk satu pengguna, dengan undangan ke email Anda. Tidak ada fee seat.", "Masukkan email yang bisa menerima undangan ChatGPT. Seat ini bukan bagian dari patungan dan tidak menunggu peserta lain. Harga yang ditampilkan adalah harga seat; total bayar tetap mengikuti ringkasan checkout."],
+      "claude-pro-po-4": ["Patungan Claude Pro (1 dari 4 peserta)", "Anda memesan satu slot patungan untuk satu paket Claude Pro yang digunakan bersama oleh empat peserta. Biaya layanan patungan Rp5.000 per peserta.", "Pesanan akan membuka grup patungan baru atau bergabung ke grup Claude Pro yang masih mengumpulkan peserta. Proses dimulai setelah empat peserta terdaftar dan pembayaran mereka dikonfirmasi; batas pengumpulan maksimal tujuh hari sejak grup dibuka. Harga paket per peserta dihitung dari harga paket umum lalu dikonversi ke rupiah. Total akhir terlihat di ringkasan checkout. Daftar peserta yang pembayarannya sudah tercatat hanya dapat dilihat peserta grup yang sudah membayar."],
+      "chatgpt-plus-po-4": ["Patungan ChatGPT Plus (1 dari 4 peserta)", "Anda memesan satu slot patungan untuk satu paket ChatGPT Plus yang digunakan bersama oleh empat peserta. Biaya layanan patungan Rp5.000 per peserta.", "Pesanan akan membuka grup patungan baru atau bergabung ke grup ChatGPT Plus yang masih mengumpulkan peserta. Proses dimulai setelah empat peserta terdaftar dan pembayaran mereka dikonfirmasi; batas pengumpulan maksimal tujuh hari sejak grup dibuka. Harga paket per peserta Rp87.250 ditambah fee Rp5.000, total Rp92.250. Daftar peserta yang pembayarannya sudah tercatat hanya dapat dilihat peserta grup yang sudah membayar."]
+    };
+    var updateProductHelp = function () {
+      if (!productHelp) return;
+      var key = state.productKey || state.poKey;
+      var copy = productHelpCopy[key];
+      productHelp.hidden = !copy;
+      if (!copy) return;
+      productHelp.querySelector("h3").textContent = copy[0];
+      productHelp.querySelector("p").textContent = copy[1];
+      productHelp.querySelector("details div").textContent = copy[2];
+    };
     var recalc = function () {
       var cur = currencySel ? currencySel.value : "IDR";
       var amount = parseFloat(amountInput.value) || 0;
@@ -247,6 +269,7 @@
         state.productKey = tab.getAttribute("data-product-key") || "";
         state.poKey = tab.getAttribute("data-po-key") || "";
         recalc();
+        updateProductHelp();
       });
     });
     var activeTab = tabs.filter(function (t) { return t.classList.contains("is-active"); })[0];
@@ -276,6 +299,8 @@
       var overlay = document.createElement("div");
       overlay.className = "checkout-modal-overlay";
       overlay.setAttribute("role", "presentation");
+      var previousBodyOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
       overlay.innerHTML =
         '<section aria-labelledby="checkout-title" aria-modal="true" class="checkout-modal" role="dialog">' +
         '<button aria-label="Tutup popup" class="checkout-modal-close" type="button">' + ICON_X + "</button>" +
@@ -286,14 +311,14 @@
          '<form class="checkout-form" novalidate>' +
         '<label>Nama<span class="checkout-input-wrap">' + ICON_USER + '<input autocomplete="name" placeholder="Masukkan nama lengkap Anda" value="' + (saved && saved.name ? saved.name.replace(/"/g, "&quot;") : "") + '"></span></label>' +
          '<label>No WhatsApp<span class="checkout-input-wrap">' + ICON_CHAT + '<input autocomplete="tel" inputmode="tel" placeholder="Contoh: 0812 3456 7890" value="' + (saved && saved.phone ? String(saved.phone).replace(/[^\d+\- ]/g, "") : "") + '"></span></label>' +
-         (state.productKey ? '<label>Email untuk undangan seat<span class="checkout-input-wrap"><input type="email" name="customer_email" autocomplete="email" inputmode="email" placeholder="nama@email.com" required></span></label><p class="checkout-seat-note">Undangan seat dikirim ke email ini. Admin juga menghubungi melalui WhatsApp.</p>' : state.poKey ? '<label>Email peserta PO<span class="checkout-input-wrap"><input type="email" name="customer_email" autocomplete="email" inputmode="email" placeholder="nama@email.com" required></span></label><p class="checkout-seat-note">Dipakai untuk menghubungi Anda soal PO. Empat peserta mengumpulkan biaya paket umum dalam 7 hari.</p>' : "") +
+          (state.productKey ? '<label>Email untuk undangan seat<span class="checkout-input-wrap"><input type="email" name="customer_email" autocomplete="email" inputmode="email" placeholder="nama@email.com" required></span></label><p class="checkout-seat-note">Seat ini untuk satu pengguna. Undangan dikirim ke email yang Anda isi; seat Business tidak dikenai fee.</p>' : state.poKey ? '<label>Email peserta patungan<span class="checkout-input-wrap"><input type="email" name="customer_email" autocomplete="email" inputmode="email" placeholder="nama@email.com" required></span></label><p class="checkout-seat-note">Email ini untuk identitas dan tindak lanjut, bukan undangan seat Business. Grup patungan berisi empat peserta; proses dimulai setelah pembayaran peserta dikonfirmasi. Daftar peserta yang sudah membayar hanya terlihat oleh anggota grup yang sudah membayar.</p>' : "") +
         '<div class="checkout-actions"><button class="checkout-cancel-button" type="button">Batal</button>' +
         '<button class="checkout-submit-button" type="submit"><span>Lanjutkan</span></button></div></form></section>';
       overlay.querySelector("#checkout-title").textContent = serviceName;
       overlay.querySelector(".checkout-product-copy p").textContent = state.plan;
       overlay.querySelector(".checkout-product-copy strong").textContent = fmtRp(priceIdr);
       overlay.querySelector(".checkout-total-card strong").textContent = fmtRp(state.total);
-      var close = function () { overlay.remove(); document.removeEventListener("keydown", onKey); };
+      var close = function () { overlay.remove(); document.removeEventListener("keydown", onKey); document.body.style.overflow = previousBodyOverflow; };
       var onKey = function (e) { if (e.key === "Escape") close(); };
       overlay.querySelector(".checkout-modal-close").addEventListener("click", close);
       overlay.querySelector(".checkout-cancel-button").addEventListener("click", close);

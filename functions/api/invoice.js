@@ -23,13 +23,20 @@ export async function onRequest({ data }) {
   const order = await db.prepare('SELECT * FROM orders WHERE code = ?').bind(code).first();
   if (!order) fail('Invoice tidak ditemukan.', 404);
   const poGroup = order.po_group_id ? await db.prepare('SELECT product_name, status, member_count, target_size, deadline_at FROM po_groups WHERE id = ?').bind(order.po_group_id).first() : null;
+  const ownPaymentConfirmed = PAID_STATUSES.includes(order.status);
   const poExpired = !!poGroup && poGroup.status === 'expired';
 
   const action = url.searchParams.get('action') || '';
 
   if (action === 'status') {
     const expired = isExpired(order) || poExpired;
-    return ok({ confirmed: PAID_STATUSES.includes(order.status), status: expired ? 'kedaluwarsa' : order.status });
+    const result = { confirmed: ownPaymentConfirmed, status: expired ? 'kedaluwarsa' : order.status };
+    if (poGroup && ownPaymentConfirmed) {
+      result.groupPaidCount = Number(await db.prepare(
+        "SELECT COUNT(*) AS n FROM po_group_members m JOIN orders o ON o.id = m.order_id WHERE m.group_id = ? AND o.status IN ('dibayar','diproses','selesai')"
+      ).bind(order.po_group_id).first('n'));
+    }
+    return ok(result);
   }
 
   const s = await settingsAll(db);
@@ -63,12 +70,18 @@ export async function onRequest({ data }) {
       view.currency = order.currency;
     }
   }
-  if (poGroup) view.po = {
-    product_name: poGroup.product_name,
-    status: poGroup.status,
-    member_count: Number(poGroup.member_count),
-    target_size: Number(poGroup.target_size),
-    deadline_at: poGroup.deadline_at,
-  };
+  if (poGroup && ownPaymentConfirmed) {
+    const paidMembers = (await db.prepare(
+      "SELECT o.customer_name FROM po_group_members m JOIN orders o ON o.id = m.order_id WHERE m.group_id = ? AND o.status IN ('dibayar','diproses','selesai') ORDER BY m.slot"
+    ).bind(order.po_group_id).all()).results;
+    view.po = {
+      product_name: poGroup.product_name,
+      status: poGroup.status,
+      paid_count: paidMembers.length,
+      target_size: Number(poGroup.target_size),
+      deadline_at: poGroup.deadline_at,
+      paid_members: paidMembers.map((member) => String(member.customer_name || '').trim().split(/\s+/)[0]).filter(Boolean),
+    };
+  }
   return ok({ order: view });
 }

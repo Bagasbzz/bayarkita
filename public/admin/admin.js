@@ -190,6 +190,19 @@
         statCard(ICON.chat, "Chat belum dibaca", s.unread_chats, s.open_chats + " percakapan aktif") +
         statCard(ICON.money, "Omzet bulan ini", fmtRp(s.revenue_month), "Fee " + fmtRp(s.fee_month) + " · pesanan selesai") +
         statCard(ICON.users, "Pesanan bulan ini", s.orders_month, s.orders_today + " hari ini · " + s.total_customers + " pelanggan");
+      var visitDays = Object.keys(s.visit_daily || {}), visitMax = 0, newVisits = 0, returningVisits = 0;
+      visitDays.forEach(function (d) {
+        var v = s.visit_daily[d];
+        visitMax = Math.max(visitMax, v.visits);
+        newVisits += v.new_visits;
+        returningVisits += v.returning_visits;
+      });
+      $("visit-chart").innerHTML = visitDays.length ? visitDays.map(function (d) {
+        var v = s.visit_daily[d], h = visitMax ? Math.max(2, Math.round(v.visits / visitMax * 100)) : 2;
+        var dt = new Date(d + "T00:00:00");
+        return '<div class="admin-bar' + (v.visits ? "" : " is-empty") + '"><i style="height:' + h + '%" data-value="' + esc(v.visits + " kunjungan · " + v.new_visits + " baru · " + v.returning_visits + " kembali") + '"></i><small>' + dt.getDate() + "/" + (dt.getMonth() + 1) + "</small></div>";
+      }).join("") : '<div class="admin-chart-empty">Belum ada data kunjungan.</div>';
+      $("visit-summary").textContent = "Total " + (newVisits + returningVisits) + " kunjungan: " + newVisits + " pengunjung baru dan " + returningVisits + " kunjungan dari pengunjung yang kembali.";
       // Grafik
       var days = Object.keys(s.daily), max = 0;
       days.forEach(function (d) { max = Math.max(max, s.daily[d].total); });
@@ -404,8 +417,8 @@
       "<div><span>Dibuat</span><b>" + fmtDateTime(o.created_at) + "</b></div>" +
       (o.expires_at ? "<div><span>Batas bayar</span><b>" + fmtDateTime(o.expires_at) + "</b></div>" : "") +
       (o.paid_at ? "<div><span>Dikonfirmasi</span><b>" + fmtDateTime(o.paid_at) + "</b></div>" : "") + '</div>' +
-      (o.po_group_id ? '<div class="admin-po-summary"><strong>PO plan umum: ' + esc(String(o.po_member_count || 0)) + '/' + esc(String(o.po_target_size || 4)) + ' peserta</strong><span>Batas pengumpulan: ' + esc(fmtDateTime(o.po_deadline_at)) + '</span></div>' : '') +
-      (o.po_group_id && o.po_status === "expired" ? '<p class="admin-warning">PO melewati batas 7 hari dan belum penuh. Hubungi peserta untuk memproses refund manual.</p>' : "") +
+      (o.po_group_id ? '<div class="admin-po-summary"><strong>Grup patungan: ' + esc(String(o.po_member_count || 0)) + '/' + esc(String(o.po_target_size || 4)) + ' pesanan</strong><span>Batas pengumpulan: ' + esc(fmtDateTime(o.po_deadline_at)) + '</span></div>' : '') +
+      (o.po_group_id && o.po_status === "expired" ? '<p class="admin-warning">Grup patungan melewati batas 7 hari dan belum penuh. Hubungi peserta untuk tindak lanjut.</p>' : "") +
       '<p><a class="admin-link" target="_blank" rel="noreferrer" href="/inv/' + encodeURIComponent(o.code) + '">Buka invoice</a></p>' +
       (o.status === "baru" ? '<button class="admin-btn admin-btn-primary" id="confirm-payment" type="button">Konfirmasi pembayaran diterima</button>' : "") +
       '<form id="note-form"><label>Catatan internal (tidak terlihat pelanggan)<textarea name="note" rows="3">' + esc(o.note || "") + '</textarea></label><div class="admin-modal-actions"><a class="admin-btn admin-btn-ghost" href="#inbox/' + o.conversation_id + '">Buka chat</a><button class="admin-btn admin-btn-primary" type="submit">Simpan catatan</button></div></form>');

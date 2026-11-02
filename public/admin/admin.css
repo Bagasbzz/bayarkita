@@ -68,6 +68,7 @@ body.admin-body [hidden]{display:none!important}
 
 /* ---------- Statistik ---------- */
 .admin-stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;display:grid}
+.admin-view[data-view="dashboard"]>.admin-card{margin-top:20px}
 .admin-stat{background:#fff;border:1px solid var(--border);border-radius:var(--admin-radius);grid-template-columns:48px 1fr;align-items:center;gap:14px;padding:18px 20px;display:grid;box-shadow:var(--admin-shadow)}
 .admin-stat-icon{color:var(--red);background:#fff7ed;border-radius:12px;place-items:center;width:48px;height:48px;display:grid}
 .admin-stat-icon svg{width:24px;height:24px}
@@ -254,8 +255,8 @@ body.admin-body [hidden]{display:none!important}
 .admin-switch input:checked:after{transform:translateX(16px)}
 
 /* ---------- Modal ---------- */
-.admin-modal{z-index:200}
-.admin-modal-card{max-width:560px;width:min(100%,560px);max-height:calc(100vh - 48px);overflow-y:auto}
+.admin-modal{z-index:200;overflow-y:auto;overscroll-behavior:contain}
+.admin-modal-card{box-sizing:border-box;max-width:560px;width:min(100%,560px);max-height:calc(100vh - 48px);max-height:calc(100dvh - 48px);overflow-y:auto;overscroll-behavior:contain}
 .admin-modal h2{font-size:20px;font-weight:950;letter-spacing:-.02em;margin:0 0 6px}
 .admin-modal p.admin-hint{margin-bottom:14px}
 .admin-modal form,.admin-modal-fields{gap:14px;display:grid}

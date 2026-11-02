@@ -42,7 +42,7 @@ export async function onRequest(context) {
   const seatProduct = getSeatProduct(productKey);
   const poProduct = getPoProduct(poKey);
   if (productKey && !seatProduct) fail('Paket seat tidak valid.');
-  if (poKey && !poProduct) fail('Paket PO tidak valid.');
+  if (poKey && !poProduct) fail('Paket patungan tidak valid.');
   if (seatProduct && poProduct) fail('Pilih satu jenis produk.');
   const fixedProduct = seatProduct || poProduct;
   if (fixedProduct) {
@@ -94,7 +94,7 @@ export async function onRequest(context) {
       const created = await db.prepare("INSERT INTO po_groups (product_key, product_name, status, target_size, member_count, deadline_at, created_at, updated_at) VALUES (?,?,'open',4,0,?,?,?)").bind(poKey, groupName, deadlineAt, ts, ts).run();
       group = await db.prepare('SELECT * FROM po_groups WHERE id = ?').bind(created.meta.last_row_id).first();
     }
-    if (Number(group.member_count) >= 4) fail('PO ini sudah penuh. Silakan coba lagi untuk masuk ke grup berikutnya.');
+    if (Number(group.member_count) >= 4) fail('Grup patungan ini sudah penuh. Silakan coba lagi untuk masuk ke grup berikutnya.');
     const slot = Number(group.member_count) + 1;
     await db.prepare('INSERT INTO po_group_members (group_id, order_id, slot, created_at) VALUES (?,?,?,?)').bind(group.id, orderId, slot, ts).run();
     const nextCount = slot;
@@ -111,18 +111,17 @@ export async function onRequest(context) {
     `Harga: ${fmtAmount(invoiceAmount, invoiceCurrency)}${invoiceCurrency !== 'IDR' ? ' ≈ ' + fmtRp(orderAmountIdr) : ''}\n` +
     `Biaya fee: ${fmtRp(orderFee)}\n` +
     `Total: ${fmtRp(orderTotal)}\n` +
-    (poGroup ? `Progress PO: ${poGroup.member_count}/4 peserta, batas ${poGroup.deadline_at}\n` : '') +
+    (poGroup ? 'Grup patungan dibuka/diikuti. Info peserta dan progres hanya tampil di invoice setelah pembayaran Anda dikonfirmasi.\n' : '') +
     `Invoice: ${redirectUrl}`;
   await addMessage(db, convId, 'system', summary, {
     type: 'order', order_id: orderId, code, status: 'baru',
     service_name: serviceName, plan, amount: invoiceAmount, currency: invoiceCurrency,
     amount_idr: orderAmountIdr, fee: orderFee, total: orderTotal, invoice_url: redirectUrl,
     product_key: seatProduct ? productKey : poProduct ? poKey : undefined,
-    po_group: poGroup || undefined,
   });
   if (s.order_auto_reply) await addMessage(db, convId, 'system', s.order_auto_reply);
   // Agen AI menyusul dengan panduan langkah pembayaran.
   if (ai && Number(conv.ai_enabled) === 1) context.waitUntil(scheduleAiReply(env, convId).catch((e) => console.error('[ai]', e)));
 
-  return ok({ token: conv.token, redirectUrl, order: { id: orderId, code, total: orderTotal, fee: orderFee, expires_at: expiresAt, po_group: poGroup } });
+  return ok({ token: conv.token, redirectUrl, order: { id: orderId, code, total: orderTotal, fee: orderFee, expires_at: expiresAt } });
 }

@@ -74,7 +74,7 @@
   var titleEl = panel.querySelector(".webchat-title strong");
   var minimized = false;
 
-  var lastId = 0, lastVisible = "", unread = 0, pollTimer = null, rendered = {}, lastDay = "";
+  var lastId = 0, lastVisible = "", unread = 0, pollTimer = null, rendered = {}, lastDay = "", pendingMessage = "";
   var messagesEl = null, textarea = null, sendBtn = null, typingEl = null;
   var agentName = "", queueTimer = null;
   var setAgent = function (name) {
@@ -110,8 +110,7 @@
       "<div><span>Harga</span><b>" + fmtAmount(o.amount, o.currency) + (o.currency !== "IDR" ? " \u2248 " + fmtRp(o.amount_idr) : "") + "</b></div>" +
       "<div><span>Biaya fee</span><b>" + fmtRp(o.fee) + "</b></div>" +
       '<div class="is-total"><span>Total</span><b>' + fmtRp(o.total) + "</b></div>" +
-      (o.po_group ? '<div><span>Progress PO</span><b>' + esc(o.po_group.member_count + '/' + o.po_group.target_size) + '</b></div>' : '') +
-      (inv ? '<a class="webchat-order-link" href="' + esc(inv) + '">Lihat invoice &amp; bayar</a>' : "") + "</div></div>";
+       (inv ? '<a class="webchat-order-link" href="' + esc(inv) + '">Lihat invoice &amp; bayar</a>' : "") + "</div></div>";
   };
 
   var renderMessage = function (m) {
@@ -244,6 +243,12 @@
     lastId = 0; lastVisible = ""; rendered = {}; lastDay = "";
     poll(true);
     startPolling();
+    if (pendingMessage) {
+      textarea.value = pendingMessage;
+      pendingMessage = "";
+      autosize();
+      form.requestSubmit();
+    }
     if (!panel.hidden) textarea.focus();
   };
   var localNow = function () { var d = new Date(), p = function (n) { return (n < 10 ? "0" : "") + n; }; return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds()); };
@@ -340,6 +345,18 @@
       renderChat();
     },
     open: open,
+    openWithMessage: function (message) {
+      pendingMessage = String(message || "").trim();
+      open();
+      if (session && textarea && !pendingMessage) return;
+      if (session && textarea && pendingMessage) {
+        var form = textarea.form;
+        textarea.value = pendingMessage;
+        pendingMessage = "";
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+        if (form && form.requestSubmit) form.requestSubmit();
+      }
+    },
     apiBase: API
   };
 })();

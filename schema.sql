@@ -118,9 +118,24 @@ CREATE TABLE IF NOT EXISTS login_attempts (
   attempted_at TEXT NOT NULL
 );
 
+-- Analytics menyimpan hitungan harian dan ID anonim sementara, bukan riwayat halaman.
+CREATE TABLE IF NOT EXISTS analytics_daily (
+  visit_date TEXT PRIMARY KEY,
+  visits INTEGER NOT NULL DEFAULT 0,
+  new_visits INTEGER NOT NULL DEFAULT 0,
+  returning_visits INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS analytics_visitors (
+  visitor_id TEXT PRIMARY KEY,
+  first_seen_at TEXT NOT NULL,
+  last_seen_at TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_msg_conv ON messages (conversation_id, id);
 CREATE INDEX IF NOT EXISTS idx_msg_visible ON messages (conversation_id, visible_at);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders (status, created_at);
 CREATE INDEX IF NOT EXISTS idx_conv_last ON conversations (last_at);
 CREATE INDEX IF NOT EXISTS idx_sessions_exp ON admin_sessions (expires_at);
 CREATE INDEX IF NOT EXISTS idx_login_ip ON login_attempts (ip, attempted_at);
+CREATE INDEX IF NOT EXISTS idx_analytics_visitors_last_seen ON analytics_visitors(last_seen_at);

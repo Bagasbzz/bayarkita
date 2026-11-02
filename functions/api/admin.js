@@ -78,6 +78,13 @@ export async function onRequest({ data, env }) {
         if (daily[d]) { daily[d].total += Number(r.total); daily[d].fee += Number(r.fee); daily[d].count++; }
       }
       const top = (await db.prepare('SELECT service_name, COUNT(*) c, COALESCE(SUM(total),0) t FROM orders GROUP BY service_name ORDER BY c DESC LIMIT 6').all()).results;
+      const visits = (await db.prepare('SELECT visit_date, visits, new_visits, returning_visits FROM analytics_daily WHERE visit_date >= ? ORDER BY visit_date')
+        .bind(daysAgo(13)).all()).results;
+      const visitDaily = {};
+      for (let i = 13; i >= 0; i--) visitDaily[daysAgo(i)] = { visits: 0, new_visits: 0, returning_visits: 0 };
+      for (const row of visits) visitDaily[row.visit_date] = {
+        visits: Number(row.visits), new_visits: Number(row.new_visits), returning_visits: Number(row.returning_visits),
+      };
       return ok({
         orders_today: Number(await one('SELECT COUNT(*) v FROM orders WHERE created_at >= ?', t0)),
         orders_month: Number(await one('SELECT COUNT(*) v FROM orders WHERE created_at >= ?', m0)),
@@ -88,7 +95,7 @@ export async function onRequest({ data, env }) {
         unread_chats: Number(await one('SELECT COUNT(*) v FROM conversations WHERE unread_admin > 0')),
         open_chats: Number(await one("SELECT COUNT(*) v FROM conversations WHERE status = 'open'")),
         total_customers: Number(await one('SELECT COUNT(*) v FROM conversations')),
-        by_status: byStatus, recent_orders: recent, daily, top_services: top,
+        by_status: byStatus, recent_orders: recent, daily, top_services: top, visit_daily: visitDaily,
       });
     }
 

@@ -51,8 +51,8 @@
 .admin-po-summary{display:grid;gap:4px;margin:12px 0;padding:12px 14px;border:1px solid #f0c7cb;border-radius:12px;background:#fff7ed;color:#7f1d1d;font-size:13px}
 .inv-total-bar span{color:var(--muted);font-weight:700;font-size:14px}
 .inv-total-bar strong{color:var(--red);font-size:20px;font-weight:950}
-.inv-wa{margin-top:14px;width:100%;height:52px;border-radius:14px;background:#16a34a;color:#fff;font-weight:900;font-size:15px;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .15s}
-.inv-wa:hover{background:#15803d}
+.inv-wa{margin-top:14px;width:100%;height:52px;border:0;border-radius:14px;background:#f97316;color:#fff;font:inherit;font-weight:900;font-size:15px;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .15s;cursor:pointer}
+.inv-wa:hover{background:#ea580c}
 .inv-wa svg{width:20px;height:20px}
 .inv-expiry{margin-top:10px;text-align:center;font-size:13px;color:var(--muted);font-weight:700}
 .inv-expiry b{color:var(--text)}
