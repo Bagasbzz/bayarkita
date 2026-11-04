@@ -87,6 +87,7 @@ export function invoiceView(order, settings) {
     currency: order.currency,
     amount_idr: Number(order.amount_idr),
     fee: Number(order.fee),
+    discount: Number(order.discount) || 0,
     total: Number(order.total),
     status: expired ? 'kedaluwarsa' : order.status,
     status_label: expired ? 'Kedaluwarsa' : STATUS_LABELS[order.status] || order.status,

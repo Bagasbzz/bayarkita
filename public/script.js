@@ -178,7 +178,7 @@
     // API berada di root domain (Cloudflare Pages Functions).
     var API_BASE = "/api/";
     // Nilai default = sama dengan setting server; akan ditimpa oleh /api/settings bila tersedia.
-    var FEE = { idr_base: 20000, idr_pct: 4.5, usd_min: 20000, usd_min_threshold: 3, usd_base: 28000, usd_pct: 1 };
+    var FEE = { idr_base: 18000, idr_pct: 4.05, usd_min: 18000, usd_min_threshold: 3, usd_base: 25200, usd_pct: 0.9 };
     var RATES = { USD: 18600, EUR: 21500, GBP: 24800, JPY: 125, CNY: 2600, THB: 570, MYR: 4400 };
     var MIN_ORDER = { IDR: 20000, USD: 1 };
     var rateFor = function (cur) { return cur === "IDR" ? 1 : (Number(RATES[cur]) || 0); };
@@ -194,8 +194,8 @@
     var serviceSlug = (location.pathname.split("/").pop() || "").replace(/\.html$/, "");
     if (optionGrid && (serviceSlug === "claude" || serviceSlug === "chatgpt")) {
       var seatButtons = serviceSlug === "claude"
-        ? '<button data-amount="257000" data-currency="IDR" data-custom="false" data-product-key="claude-team-standard" aria-selected="false" role="tab" type="button">Team Standard Seat</button><button data-amount="812000" data-currency="IDR" data-custom="false" data-product-key="claude-team-premium" aria-selected="false" role="tab" type="button">Team Premium Seat</button><button data-amount="5.55" data-currency="USD" data-custom="false" data-po-key="claude-pro-po-4" aria-selected="false" role="tab" type="button">Patungan Claude Pro (1/4)</button>'
-        : '<button data-amount="58000" data-currency="IDR" data-custom="false" data-product-key="chatgpt-business-standard" aria-selected="false" role="tab" type="button">Business Standard Seat</button><button data-amount="316000" data-currency="IDR" data-custom="false" data-product-key="chatgpt-business-premium" aria-selected="false" role="tab" type="button">Business Premium Seat</button><button data-amount="87250" data-currency="IDR" data-custom="false" data-po-key="chatgpt-plus-po-4" aria-selected="false" role="tab" type="button">Patungan ChatGPT Plus (1/4)</button>';
+        ? '<button data-amount="257000" data-currency="IDR" data-custom="false" data-product-key="claude-team-standard" data-plan="Claude Team Standard Seat" aria-selected="false" role="tab" type="button">Team Standard Seat</button><button data-amount="812000" data-currency="IDR" data-custom="false" data-product-key="claude-team-premium" data-plan="Claude Team Premium Seat" aria-selected="false" role="tab" type="button">Team Premium Seat</button><button data-amount="5.55" data-currency="USD" data-custom="false" data-po-key="claude-pro-po-4" data-plan="Patungan Claude Pro (1/4)" aria-selected="false" role="tab" type="button">Patungan Claude Pro (1/4)</button>'
+        : '<button data-amount="58000" data-currency="IDR" data-custom="false" data-product-key="chatgpt-business-standard" data-plan="ChatGPT Business Standard Seat" aria-selected="false" role="tab" type="button">Business Standard Seat</button><button data-amount="316000" data-currency="IDR" data-custom="false" data-product-key="chatgpt-business-premium" data-plan="ChatGPT Business Premium Seat" aria-selected="false" role="tab" type="button">Business Premium Seat</button><button data-amount="87250" data-currency="IDR" data-custom="false" data-po-key="chatgpt-plus-po-4" data-plan="Patungan ChatGPT Plus (1/4)" aria-selected="false" role="tab" type="button">Patungan ChatGPT Plus (1/4)</button>';
       var customTab = optionGrid.querySelector('[data-custom="true"]');
       if (customTab) {
         customTab.insertAdjacentHTML("beforebegin", seatButtons);
@@ -210,6 +210,28 @@
     var costStrong = orderCard.querySelectorAll(".service-cost-summary strong");
     var orderBtn = orderCard.querySelector(".service-order-button");
     var brandImg = orderCard.querySelector(".service-order-brand-icon img");
+    // Potongan harga per layanan (USD) untuk semua paket tetap; harus sama dengan DISCOUNT_USD di server.
+    var DISCOUNT_USD = { chatgpt: 2.12, claude: 3.56 }[serviceSlug] || 0;
+    var tabLabel = function (t) { return t.getAttribute("data-plan") || t.textContent.trim(); };
+    var activeIsFixed = function () {
+      var t = tabs.filter(function (x) { return x.classList.contains("is-active"); })[0];
+      return !!DISCOUNT_USD && !!t && t.getAttribute("data-custom") !== "true";
+    };
+    var discountRow = null;
+    if (DISCOUNT_USD) {
+      var discText = "-$" + DISCOUNT_USD.toFixed(2).replace(".", ",");
+      tabs.forEach(function (t) {
+        if (t.getAttribute("data-custom") === "true") return;
+        if (!t.getAttribute("data-plan")) t.setAttribute("data-plan", t.textContent.trim());
+        t.insertAdjacentHTML("beforeend", '<span class="service-discount-badge">' + discText + "</span>");
+      });
+      var summary = orderCard.querySelector(".service-cost-summary");
+      var totalRow = summary && summary.lastElementChild;
+      if (totalRow) {
+        totalRow.insertAdjacentHTML("beforebegin", '<div class="service-discount-row" hidden><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg><span>Diskon (' + discText + ')</span><strong></strong></div>');
+        discountRow = summary.querySelector(".service-discount-row");
+      }
+    }
     var fmtRp = function (n) { return "Rp " + Math.round(n).toLocaleString("id-ID"); };
     var fmtPrice = function (n, cur) {
       if (cur === "IDR") return fmtRp(n);
@@ -224,7 +246,7 @@
       "chatgpt-business-standard": ["ChatGPT Business Standard Seat", "Seat Business khusus untuk satu pengguna, dengan undangan ke email Anda. Tidak ada fee seat.", "Masukkan email yang bisa menerima undangan ChatGPT. Seat ini bukan bagian dari patungan dan tidak menunggu peserta lain. Harga yang ditampilkan adalah harga seat; total bayar tetap mengikuti ringkasan checkout."],
       "chatgpt-business-premium": ["ChatGPT Business Premium Seat", "Seat Business Premium khusus untuk satu pengguna, dengan undangan ke email Anda. Tidak ada fee seat.", "Masukkan email yang bisa menerima undangan ChatGPT. Seat ini bukan bagian dari patungan dan tidak menunggu peserta lain. Harga yang ditampilkan adalah harga seat; total bayar tetap mengikuti ringkasan checkout."],
       "claude-pro-po-4": ["Patungan Claude Pro (1 dari 4 peserta)", "Anda memesan satu slot patungan untuk satu paket Claude Pro yang digunakan bersama oleh empat peserta. Biaya layanan patungan Rp5.000 per peserta.", "Pesanan akan membuka grup patungan baru atau bergabung ke grup Claude Pro yang masih mengumpulkan peserta. Proses dimulai setelah empat peserta terdaftar dan pembayaran mereka dikonfirmasi; batas pengumpulan maksimal tujuh hari sejak grup dibuka. Harga paket per peserta dihitung dari harga paket umum lalu dikonversi ke rupiah. Total akhir terlihat di ringkasan checkout. Daftar peserta yang pembayarannya sudah tercatat hanya dapat dilihat peserta grup yang sudah membayar."],
-      "chatgpt-plus-po-4": ["Patungan ChatGPT Plus (1 dari 4 peserta)", "Anda memesan satu slot patungan untuk satu paket ChatGPT Plus yang digunakan bersama oleh empat peserta. Biaya layanan patungan Rp5.000 per peserta.", "Pesanan akan membuka grup patungan baru atau bergabung ke grup ChatGPT Plus yang masih mengumpulkan peserta. Proses dimulai setelah empat peserta terdaftar dan pembayaran mereka dikonfirmasi; batas pengumpulan maksimal tujuh hari sejak grup dibuka. Harga paket per peserta Rp87.250 ditambah fee Rp5.000, total Rp92.250. Daftar peserta yang pembayarannya sudah tercatat hanya dapat dilihat peserta grup yang sudah membayar."]
+      "chatgpt-plus-po-4": ["Patungan ChatGPT Plus (1 dari 4 peserta)", "Anda memesan satu slot patungan untuk satu paket ChatGPT Plus yang digunakan bersama oleh empat peserta. Biaya layanan patungan Rp5.000 per peserta.", "Pesanan akan membuka grup patungan baru atau bergabung ke grup ChatGPT Plus yang masih mengumpulkan peserta. Proses dimulai setelah empat peserta terdaftar dan pembayaran mereka dikonfirmasi; batas pengumpulan maksimal tujuh hari sejak grup dibuka. Harga paket per peserta Rp87.250 ditambah fee Rp5.000, lalu dipotong diskon ChatGPT; total akhir terlihat di ringkasan checkout. Daftar peserta yang pembayarannya sudah tercatat hanya dapat dilihat peserta grup yang sudah membayar."]
     };
     var updateProductHelp = function () {
       if (!productHelp) return;
@@ -240,10 +262,17 @@
       var cur = currencySel ? currencySel.value : "IDR";
       var amount = parseFloat(amountInput.value) || 0;
       var fee = state.productKey ? 0 : state.poKey ? 5000 : feeFor(amount, cur);
-      var total = amount * rateFor(cur) + fee;
-      state = { amount: amount, currency: cur, fee: fee, total: total, plan: state.plan, productKey: state.productKey, poKey: state.poKey };
+      var priceIdr = amount * rateFor(cur);
+      // Diskon hanya untuk paket tetap (bukan Custom); server menghitung ulang nilai final.
+      var discount = activeIsFixed() ? Math.min(Math.round(DISCOUNT_USD * RATES.USD), Math.round(priceIdr)) : 0;
+      var total = priceIdr + fee - discount;
+      state = { amount: amount, currency: cur, fee: fee, discount: discount, total: total, plan: state.plan, productKey: state.productKey, poKey: state.poKey };
       if (costStrong[0]) costStrong[0].textContent = fmtPrice(amount, cur);
       if (costStrong[1]) costStrong[1].textContent = fmtRp(fee);
+      if (discountRow) {
+        discountRow.hidden = !discount;
+        discountRow.querySelector("strong").textContent = "-" + fmtRp(discount);
+      }
       if (costStrong[2]) costStrong[2].textContent = fmtRp(total);
       if (amountLabel) amountLabel.firstChild.textContent = "Jumlah " + cur;
       if (orderBtn) {
@@ -265,7 +294,7 @@
         if (currencySel) currencySel.disabled = !custom;
         amountInput.value = tab.getAttribute("data-amount") || "0";
         if (currencySel && tab.getAttribute("data-currency")) currencySel.value = tab.getAttribute("data-currency");
-        state.plan = tab.textContent.trim();
+        state.plan = tab.getAttribute("data-plan") || tabLabel(tab);
         state.productKey = tab.getAttribute("data-product-key") || "";
         state.poKey = tab.getAttribute("data-po-key") || "";
         recalc();
@@ -273,7 +302,7 @@
       });
     });
     var activeTab = tabs.filter(function (t) { return t.classList.contains("is-active"); })[0];
-    state.plan = activeTab ? activeTab.textContent.trim() : "";
+    state.plan = activeTab ? activeTab.getAttribute("data-plan") || tabLabel(activeTab) : "";
     state.productKey = activeTab ? activeTab.getAttribute("data-product-key") || "" : "";
     state.poKey = activeTab ? activeTab.getAttribute("data-po-key") || "" : "";
     if (amountInput) amountInput.addEventListener("input", recalc);

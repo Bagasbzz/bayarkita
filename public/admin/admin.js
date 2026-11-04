@@ -306,6 +306,7 @@
       '<div class="webchat-order-rows"><div><span>Layanan</span><b>' + esc(o.service_name) + (o.plan ? " \u00b7 " + esc(o.plan) : "") + "</b></div>" +
       "<div><span>Harga</span><b>" + fmtAmount(o.amount, o.currency) + (o.currency !== "IDR" ? " \u2248 " + fmtRp(o.amount_idr) : "") + "</b></div>" +
       "<div><span>Biaya fee</span><b>" + fmtRp(o.fee) + "</b></div>" +
+      (o.discount > 0 ? "<div><span>Diskon</span><b>-" + fmtRp(o.discount) + "</b></div>" : "") +
       '<div class="is-total"><span>Total</span><b>' + fmtRp(o.total) + "</b></div></div></div>";
   };
   var appendMsg = function (m) {
@@ -412,7 +413,7 @@
       (o.customer_email ? "<div><span>Email undangan</span><b>" + esc(o.customer_email) + "</b></div>" : "") +
       "<div><span>Layanan</span><b>" + esc(o.service_name) + (o.plan ? " · " + esc(o.plan) : "") + "</b></div>" +
       "<div><span>Nominal</span><b>" + fmtAmount(o.amount, o.currency) + (o.currency !== "IDR" ? " ≈ " + fmtRp(o.amount_idr) + " (kurs " + Number(o.rate).toLocaleString("id-ID") + ")" : "") + "</b></div>" +
-      "<div><span>Fee</span><b>" + fmtRp(o.fee) + "</b></div><div><span>Total</span><b>" + fmtRp(o.total) + "</b></div>" +
+      "<div><span>Fee</span><b>" + fmtRp(o.fee) + "</b></div>" + (Number(o.discount) > 0 ? "<div><span>Diskon</span><b>-" + fmtRp(o.discount) + "</b></div>" : "") + "<div><span>Total</span><b>" + fmtRp(o.total) + "</b></div>" +
       '<div><span>Status</span><b><span class="admin-status is-' + esc(o.status) + '">' + (STATUS[o.status] || o.status) + "</span></b></div>" +
       "<div><span>Dibuat</span><b>" + fmtDateTime(o.created_at) + "</b></div>" +
       (o.expires_at ? "<div><span>Batas bayar</span><b>" + fmtDateTime(o.expires_at) + "</b></div>" : "") +

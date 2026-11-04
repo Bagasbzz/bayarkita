@@ -95,8 +95,8 @@ export function parseLocal(s) {
 // ---------- Data default ----------
 export function defaultSettings() {
   return {
-    fee_idr_base: 20000, fee_idr_pct: 4.5,
-    fee_usd_min: 20000, fee_usd_min_threshold: 3, fee_usd_base: 28000, fee_usd_pct: 1,
+    fee_idr_base: 18000, fee_idr_pct: 4.05,
+    fee_usd_min: 18000, fee_usd_min_threshold: 3, fee_usd_base: 25200, fee_usd_pct: 0.9,
     rate_USD: 18600, rate_EUR: 21500, rate_GBP: 24800, rate_JPY: 125, rate_CNY: 2600, rate_THB: 570, rate_MYR: 4400,
     min_order_idr: 20000, min_order_usd: 1,
     wa_number: '628127968494', telegram: 'bayarkitaid',

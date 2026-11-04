@@ -109,6 +109,7 @@
       '<div class="webchat-order-rows"><div><span>Layanan</span><b>' + esc(o.service_name) + (o.plan ? " \u00b7 " + esc(o.plan) : "") + "</b></div>" +
       "<div><span>Harga</span><b>" + fmtAmount(o.amount, o.currency) + (o.currency !== "IDR" ? " \u2248 " + fmtRp(o.amount_idr) : "") + "</b></div>" +
       "<div><span>Biaya fee</span><b>" + fmtRp(o.fee) + "</b></div>" +
+      (o.discount > 0 ? "<div><span>Diskon</span><b>-" + fmtRp(o.discount) + "</b></div>" : "") +
       '<div class="is-total"><span>Total</span><b>' + fmtRp(o.total) + "</b></div>" +
        (inv ? '<a class="webchat-order-link" href="' + esc(inv) + '">Lihat invoice &amp; bayar</a>' : "") + "</div></div>";
   };

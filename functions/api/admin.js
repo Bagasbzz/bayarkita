@@ -219,10 +219,10 @@ export async function onRequest({ data, env }) {
 
     case 'export_orders': {
       const rows = (await db.prepare('SELECT * FROM orders ORDER BY id DESC').all()).results;
-      const head = ['Kode', 'Tanggal', 'Pelanggan', 'WhatsApp', 'Email Undangan', 'Layanan', 'Paket', 'Jumlah', 'Mata Uang', 'Kurs', 'Nominal IDR', 'Fee', 'Total', 'Status', 'Catatan'];
+      const head = ['Kode', 'Tanggal', 'Pelanggan', 'WhatsApp', 'Email Undangan', 'Layanan', 'Paket', 'Jumlah', 'Mata Uang', 'Kurs', 'Nominal IDR', 'Fee', 'Diskon', 'Total', 'Status', 'Catatan'];
       const lines = [head.map(csvCell).join(',')];
       for (const o of rows) {
-        lines.push([o.code, o.created_at, o.customer_name, o.phone, o.customer_email || '', o.service_name, o.plan, o.amount, o.currency, o.rate, o.amount_idr, o.fee, o.total, o.status, o.note].map(csvCell).join(','));
+        lines.push([o.code, o.created_at, o.customer_name, o.phone, o.customer_email || '', o.service_name, o.plan, o.amount, o.currency, o.rate, o.amount_idr, o.fee, o.discount || 0, o.total, o.status, o.note].map(csvCell).join(','));
       }
       const stamp = now().replace(/[-:]/g, '').replace(' ', '-');
       return new Response('\uFEFF' + lines.join('\r\n'), {

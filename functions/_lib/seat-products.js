@@ -4,7 +4,7 @@ export const SEAT_PRODUCTS = {
   'claude-team-standard': { service_slug: 'claude', service_name: 'Claude', plan: 'Claude Team Standard Seat', amount: 257000 },
   'claude-team-premium': { service_slug: 'claude', service_name: 'Claude', plan: 'Claude Team Premium Seat', amount: 812000 },
   'chatgpt-business-standard': { service_slug: 'chatgpt', service_name: 'ChatGPT', plan: 'ChatGPT Business Standard Seat', amount: 58000 },
-  'chatgpt-business-premium': { service_slug: 'chatgpt', service_name: 'ChatGPT Business Premium Seat', amount: 316000 },
+  'chatgpt-business-premium': { service_slug: 'chatgpt', service_name: 'ChatGPT', plan: 'ChatGPT Business Premium Seat', amount: 316000 },
 };
 
 // Patungan paket umum per peserta; 4 pembeli membiayai 1 paket untuk 4 pengguna.
@@ -17,6 +17,16 @@ export const PO_PRODUCTS = {
 
 export function getSeatProduct(key) {
   return Object.hasOwn(SEAT_PRODUCTS, String(key || '')) ? SEAT_PRODUCTS[key] : null;
+}
+
+// Potongan harga per layanan (USD), berlaku untuk semua paket tetap (preset, seat,
+// patungan); tidak berlaku untuk nominal Custom. Dikonversi ke rupiah dengan kurs USD.
+export const DISCOUNT_USD = { chatgpt: 2.12, claude: 3.56 };
+
+export function discountIdr(slug, s) {
+  const usd = Object.hasOwn(DISCOUNT_USD, String(slug || '')) ? DISCOUNT_USD[slug] : 0;
+  const rate = Number(s.rate_USD);
+  return usd > 0 && rate > 0 ? Math.round(usd * rate) : 0;
 }
 
 export function getPoProduct(key) {

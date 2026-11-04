@@ -6,13 +6,13 @@
  *      mengembalikan redirectUrl ke halaman invoice /inv/{kode}.
  */
 import {
-  ok, fail, param, strParam, now, fmtLocal, normalizePhone, settingsAll, calcOrder, fmtRp, fmtAmount,
+  ok, fail, param, strParam, now, fmtLocal, normalizePhone, settingsAll, calcOrder, fmtRp, fmtAmount, parseJsonArr,
   conversationByToken, createConversation, addMessage,
 } from '../_lib/core.js';
 import { randomHex } from '../_lib/password.js';
 import { pickAgent, scheduleAiReply } from '../_lib/ai.js';
 import { invoiceExpiry } from '../_lib/payment.js';
-import { getSeatProduct, getPoProduct } from '../_lib/seat-products.js';
+import { getSeatProduct, getPoProduct, discountIdr } from '../_lib/seat-products.js';
 
 export async function onRequest(context) {
   const { data, env } = context;
@@ -60,7 +60,15 @@ export async function onRequest(context) {
   const orderRate = seatProduct || poProduct ? 1 : calc.rate;
   const orderAmountIdr = seatProduct ? seatProduct.amount : poProduct ? (poProduct.currency === 'IDR' ? poProduct.amount : calc.amount_idr) : calc.amount_idr;
   const orderFee = seatProduct ? 0 : poProduct ? 5000 : calc.fee;
-  const orderTotal = seatProduct ? seatProduct.amount : poProduct ? orderAmountIdr + orderFee : calc.total;
+  // Diskon hanya untuk paket tetap (seat, patungan, atau preset non-Custom yang cocok
+  // persis dengan katalog layanan di database). Nominal Custom tidak didiskon.
+  let isFixedPlan = !!fixedProduct;
+  if (!isFixedPlan && discountIdr(serviceSlug, s) > 0) {
+    const svc = await db.prepare('SELECT presets FROM services WHERE slug = ? AND active = 1').bind(serviceSlug).first();
+    isFixedPlan = !!svc && parseJsonArr(svc.presets).some((p) => !p.custom && p.label === plan && Number(p.amount) === amount && String(p.currency).toUpperCase() === currency);
+  }
+  const orderDiscount = isFixedPlan ? Math.min(discountIdr(serviceSlug, s), Math.round(orderAmountIdr)) : 0;
+  const orderTotal = (seatProduct ? seatProduct.amount : poProduct ? orderAmountIdr + orderFee : calc.total) - orderDiscount;
   const invoiceAmount = seatProduct || poProduct ? orderAmountIdr : amount;
   const invoiceCurrency = seatProduct || poProduct ? 'IDR' : currency;
 
@@ -81,8 +89,8 @@ export async function onRequest(context) {
   const ts = now();
   const expiresAt = invoiceExpiry(s);
   const res = await db.prepare(
-    'INSERT INTO orders (code, conversation_id, service_slug, service_name, plan, amount, currency, rate, amount_idr, fee, total, status, customer_name, phone, created_at, updated_at, expires_at, customer_email, product_key, po_group_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
-  ).bind(code, convId, serviceSlug, serviceName, plan, invoiceAmount, invoiceCurrency, orderRate, orderAmountIdr, orderFee, orderTotal, 'baru', name, phone, ts, ts, expiresAt, emailProduct ? customerEmail : null, seatProduct ? productKey : poProduct ? poKey : null, null).run();
+    'INSERT INTO orders (code, conversation_id, service_slug, service_name, plan, amount, currency, rate, amount_idr, fee, total, status, customer_name, phone, created_at, updated_at, expires_at, customer_email, product_key, po_group_id, discount) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+  ).bind(code, convId, serviceSlug, serviceName, plan, invoiceAmount, invoiceCurrency, orderRate, orderAmountIdr, orderFee, orderTotal, 'baru', name, phone, ts, ts, expiresAt, emailProduct ? customerEmail : null, seatProduct ? productKey : poProduct ? poKey : null, null, orderDiscount).run();
   const orderId = Number(res.meta.last_row_id);
   let poGroup = null;
   if (poProduct) {
@@ -110,13 +118,14 @@ export async function onRequest(context) {
     `Layanan: ${serviceName}${plan ? ` - ${plan}` : ''}\n` +
     `Harga: ${fmtAmount(invoiceAmount, invoiceCurrency)}${invoiceCurrency !== 'IDR' ? ' ≈ ' + fmtRp(orderAmountIdr) : ''}\n` +
     `Biaya fee: ${fmtRp(orderFee)}\n` +
+    (orderDiscount ? `Diskon: -${fmtRp(orderDiscount)}\n` : '') +
     `Total: ${fmtRp(orderTotal)}\n` +
     (poGroup ? 'Grup patungan dibuka/diikuti. Info peserta dan progres hanya tampil di invoice setelah pembayaran Anda dikonfirmasi.\n' : '') +
     `Invoice: ${redirectUrl}`;
   await addMessage(db, convId, 'system', summary, {
     type: 'order', order_id: orderId, code, status: 'baru',
     service_name: serviceName, plan, amount: invoiceAmount, currency: invoiceCurrency,
-    amount_idr: orderAmountIdr, fee: orderFee, total: orderTotal, invoice_url: redirectUrl,
+    amount_idr: orderAmountIdr, fee: orderFee, discount: orderDiscount, total: orderTotal, invoice_url: redirectUrl,
     product_key: seatProduct ? productKey : poProduct ? poKey : undefined,
   });
   if (s.order_auto_reply) await addMessage(db, convId, 'system', s.order_auto_reply);

@@ -61,6 +61,7 @@
       "<div><span>Layanan:</span><b>" + esc(order.service) + "</b></div>" +
       "<div><span>Nominal:</span><b>" + esc(nominal) + "</b></div>" +
       "<div><span>Biaya Layanan:</span><b>" + fmtRp(order.fee) + "</b></div>" +
+      (order.discount > 0 ? "<div><span>Diskon:</span><b>-" + fmtRp(order.discount) + "</b></div>" : "") +
       '<div><span>Status:</span><b><span class="inv-pill is-' + esc(order.status) + '">' + esc(order.status_label) + "</span></b></div>" +
       '<div class="is-total"><span>Total Pembayaran:</span><b>' + fmtRp(order.total) + "</b></div>" +
       (order.po ? '<div><span>Peserta sudah membayar:</span><b>' + esc(order.po.paid_count + '/' + order.po.target_size + ' peserta') + '</b></div>' : '') +

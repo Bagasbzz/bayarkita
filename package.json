@@ -17,6 +17,8 @@
     "db:brand": "wrangler d1 execute bayarkita --remote --file=./migrations/006_bayarkita_brand.sql",
     "db:analytics:local": "wrangler d1 execute bayarkita --local --file=./migrations/007_visitor_analytics.sql",
     "db:analytics": "wrangler d1 execute bayarkita --remote --file=./migrations/007_visitor_analytics.sql",
+    "db:discount:local": "wrangler d1 execute bayarkita --local --file=./migrations/008_order_discount.sql",
+    "db:discount": "wrangler d1 execute bayarkita --remote --file=./migrations/008_order_discount.sql",
     "deploy": "wrangler pages deploy public",
     "test": "node scripts/test-qris.mjs"
   },

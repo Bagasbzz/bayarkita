@@ -79,7 +79,8 @@ CREATE TABLE IF NOT EXISTS orders (
   paid_at         TEXT,                          -- waktu pembayaran dikonfirmasi admin
   customer_email TEXT,                           -- email tujuan undangan seat (khusus admin)
   product_key     TEXT,                           -- snapshot key paket promo seat/PO
-  po_group_id     INTEGER                         -- grup PO plan umum bila ada
+  po_group_id     INTEGER,                        -- grup PO plan umum bila ada
+  discount        REAL NOT NULL DEFAULT 0         -- potongan harga (IDR) yang sudah dikurangkan dari total
 );
 
 CREATE TABLE IF NOT EXISTS po_groups (
