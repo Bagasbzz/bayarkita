@@ -19,6 +19,8 @@
     "db:analytics": "wrangler d1 execute bayarkita --remote --file=./migrations/007_visitor_analytics.sql",
     "db:discount:local": "wrangler d1 execute bayarkita --local --file=./migrations/008_order_discount.sql",
     "db:discount": "wrangler d1 execute bayarkita --remote --file=./migrations/008_order_discount.sql",
+    "db:feecut:local": "wrangler d1 execute bayarkita --local --file=./migrations/009_fee_cut_promo.sql",
+    "db:feecut": "wrangler d1 execute bayarkita --remote --file=./migrations/009_fee_cut_promo.sql",
     "deploy": "wrangler pages deploy public",
     "test": "node scripts/test-qris.mjs"
   },

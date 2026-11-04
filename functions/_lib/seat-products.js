@@ -19,14 +19,22 @@ export function getSeatProduct(key) {
   return Object.hasOwn(SEAT_PRODUCTS, String(key || '')) ? SEAT_PRODUCTS[key] : null;
 }
 
-// Potongan harga per layanan (USD), berlaku untuk semua paket tetap (preset, seat,
-// patungan); tidak berlaku untuk nominal Custom. Dikonversi ke rupiah dengan kurs USD.
+// Potongan harga per layanan (USD), hanya untuk paket tetap (preset, seat, patungan)
+// yang harganya lebih dari DISCOUNT_MIN_USD. Paket ini tidak mendapat potongan fee %.
+// Nominal Custom tidak didiskon. Dikonversi ke rupiah dengan kurs USD.
 export const DISCOUNT_USD = { chatgpt: 2.12, claude: 3.56 };
+export const DISCOUNT_MIN_USD = 20;
 
 export function discountIdr(slug, s) {
   const usd = Object.hasOwn(DISCOUNT_USD, String(slug || '')) ? DISCOUNT_USD[slug] : 0;
   const rate = Number(s.rate_USD);
   return usd > 0 && rate > 0 ? Math.round(usd * rate) : 0;
+}
+
+/** True bila paket tetap ini termasuk "paket mahal" (> $20) yang berhak diskon dolar. */
+export function isPremiumPlan(slug, amountIdr, s) {
+  const rate = Number(s.rate_USD);
+  return discountIdr(slug, s) > 0 && rate > 0 && amountIdr / rate > DISCOUNT_MIN_USD;
 }
 
 export function getPoProduct(key) {

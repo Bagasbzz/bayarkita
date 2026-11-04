@@ -12,7 +12,7 @@ import {
 import { randomHex } from '../_lib/password.js';
 import { pickAgent, scheduleAiReply } from '../_lib/ai.js';
 import { invoiceExpiry } from '../_lib/payment.js';
-import { getSeatProduct, getPoProduct, discountIdr } from '../_lib/seat-products.js';
+import { getSeatProduct, getPoProduct, discountIdr, isPremiumPlan } from '../_lib/seat-products.js';
 
 export async function onRequest(context) {
   const { data, env } = context;
@@ -59,16 +59,20 @@ export async function onRequest(context) {
   const emailProduct = seatProduct || poProduct;
   const orderRate = seatProduct || poProduct ? 1 : calc.rate;
   const orderAmountIdr = seatProduct ? seatProduct.amount : poProduct ? (poProduct.currency === 'IDR' ? poProduct.amount : calc.amount_idr) : calc.amount_idr;
-  const orderFee = seatProduct ? 0 : poProduct ? 5000 : calc.fee;
-  // Diskon hanya untuk paket tetap (seat, patungan, atau preset non-Custom yang cocok
-  // persis dengan katalog layanan di database). Nominal Custom tidak didiskon.
+  // Paket tetap = seat, patungan, atau preset non-Custom yang cocok persis dengan
+  // katalog layanan di database. Nilai dari browser tidak dipercaya.
   let isFixedPlan = !!fixedProduct;
   if (!isFixedPlan && discountIdr(serviceSlug, s) > 0) {
     const svc = await db.prepare('SELECT presets FROM services WHERE slug = ? AND active = 1').bind(serviceSlug).first();
     isFixedPlan = !!svc && parseJsonArr(svc.presets).some((p) => !p.custom && p.label === plan && Number(p.amount) === amount && String(p.currency).toUpperCase() === currency);
   }
-  const orderDiscount = isFixedPlan ? Math.min(discountIdr(serviceSlug, s), Math.round(orderAmountIdr)) : 0;
-  const orderTotal = (seatProduct ? seatProduct.amount : poProduct ? orderAmountIdr + orderFee : calc.total) - orderDiscount;
+  // Paket mahal (> $20) ChatGPT/Claude: fee normal + diskon dolar.
+  // Selain itu: fee dipotong fee_cut_pct (seat tetap Rp0, patungan tetap Rp5.000).
+  const premium = isFixedPlan && isPremiumPlan(serviceSlug, orderAmountIdr, s);
+  const cutPct = Math.min(Math.max(Number(s.fee_cut_pct) || 0, 0), 100);
+  const orderFee = seatProduct ? 0 : poProduct ? 5000 : premium ? calc.fee : Math.round(calc.fee * (100 - cutPct) / 100);
+  const orderDiscount = premium ? Math.min(discountIdr(serviceSlug, s), Math.round(orderAmountIdr)) : 0;
+  const orderTotal = Math.round(orderAmountIdr + orderFee - orderDiscount);
   const invoiceAmount = seatProduct || poProduct ? orderAmountIdr : amount;
   const invoiceCurrency = seatProduct || poProduct ? 'IDR' : currency;
 

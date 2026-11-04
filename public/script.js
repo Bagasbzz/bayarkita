@@ -178,7 +178,7 @@
     // API berada di root domain (Cloudflare Pages Functions).
     var API_BASE = "/api/";
     // Nilai default = sama dengan setting server; akan ditimpa oleh /api/settings bila tersedia.
-    var FEE = { idr_base: 18000, idr_pct: 4.05, usd_min: 18000, usd_min_threshold: 3, usd_base: 25200, usd_pct: 0.9 };
+    var FEE = { idr_base: 20000, idr_pct: 4.5, usd_min: 20000, usd_min_threshold: 3, usd_base: 28000, usd_pct: 1, cut_pct: 10 };
     var RATES = { USD: 18600, EUR: 21500, GBP: 24800, JPY: 125, CNY: 2600, THB: 570, MYR: 4400 };
     var MIN_ORDER = { IDR: 20000, USD: 1 };
     var rateFor = function (cur) { return cur === "IDR" ? 1 : (Number(RATES[cur]) || 0); };
@@ -210,20 +210,31 @@
     var costStrong = orderCard.querySelectorAll(".service-cost-summary strong");
     var orderBtn = orderCard.querySelector(".service-order-button");
     var brandImg = orderCard.querySelector(".service-order-brand-icon img");
-    // Potongan harga per layanan (USD) untuk semua paket tetap; harus sama dengan DISCOUNT_USD di server.
+    // Potongan harga (USD) khusus paket tetap > $20; harus sama dengan DISCOUNT_USD/DISCOUNT_MIN_USD di server.
+    // Paket lain (termasuk Custom) mendapat potongan fee FEE.cut_pct; seat tetap Rp0, patungan tetap Rp5.000.
     var DISCOUNT_USD = { chatgpt: 2.12, claude: 3.56 }[serviceSlug] || 0;
+    var DISCOUNT_MIN_USD = 20;
     var tabLabel = function (t) { return t.getAttribute("data-plan") || t.textContent.trim(); };
-    var activeIsFixed = function () {
-      var t = tabs.filter(function (x) { return x.classList.contains("is-active"); })[0];
-      return !!DISCOUNT_USD && !!t && t.getAttribute("data-custom") !== "true";
+    var activeTabEl = function () { return tabs.filter(function (x) { return x.classList.contains("is-active"); })[0]; };
+    var tabIsPremium = function (t) {
+      if (!DISCOUNT_USD || !t || t.getAttribute("data-custom") === "true") return false;
+      var idr = (parseFloat(t.getAttribute("data-amount")) || 0) * rateFor(t.getAttribute("data-currency") || "IDR");
+      return RATES.USD > 0 && idr / RATES.USD > DISCOUNT_MIN_USD;
     };
     var discountRow = null;
+    var feeLabel = (orderCard.querySelectorAll(".service-cost-summary span")[1]) || null;
+    var refreshBadges = function () {
+      tabs.forEach(function (t) {
+        var badge = t.querySelector(".service-discount-badge");
+        if (badge) badge.hidden = !tabIsPremium(t);
+      });
+    };
     if (DISCOUNT_USD) {
       var discText = "-$" + DISCOUNT_USD.toFixed(2).replace(".", ",");
       tabs.forEach(function (t) {
         if (t.getAttribute("data-custom") === "true") return;
         if (!t.getAttribute("data-plan")) t.setAttribute("data-plan", t.textContent.trim());
-        t.insertAdjacentHTML("beforeend", '<span class="service-discount-badge">' + discText + "</span>");
+        t.insertAdjacentHTML("beforeend", '<span class="service-discount-badge" hidden>' + discText + "</span>");
       });
       var summary = orderCard.querySelector(".service-cost-summary");
       var totalRow = summary && summary.lastElementChild;
@@ -246,7 +257,7 @@
       "chatgpt-business-standard": ["ChatGPT Business Standard Seat", "Seat Business khusus untuk satu pengguna, dengan undangan ke email Anda. Tidak ada fee seat.", "Masukkan email yang bisa menerima undangan ChatGPT. Seat ini bukan bagian dari patungan dan tidak menunggu peserta lain. Harga yang ditampilkan adalah harga seat; total bayar tetap mengikuti ringkasan checkout."],
       "chatgpt-business-premium": ["ChatGPT Business Premium Seat", "Seat Business Premium khusus untuk satu pengguna, dengan undangan ke email Anda. Tidak ada fee seat.", "Masukkan email yang bisa menerima undangan ChatGPT. Seat ini bukan bagian dari patungan dan tidak menunggu peserta lain. Harga yang ditampilkan adalah harga seat; total bayar tetap mengikuti ringkasan checkout."],
       "claude-pro-po-4": ["Patungan Claude Pro (1 dari 4 peserta)", "Anda memesan satu slot patungan untuk satu paket Claude Pro yang digunakan bersama oleh empat peserta. Biaya layanan patungan Rp5.000 per peserta.", "Pesanan akan membuka grup patungan baru atau bergabung ke grup Claude Pro yang masih mengumpulkan peserta. Proses dimulai setelah empat peserta terdaftar dan pembayaran mereka dikonfirmasi; batas pengumpulan maksimal tujuh hari sejak grup dibuka. Harga paket per peserta dihitung dari harga paket umum lalu dikonversi ke rupiah. Total akhir terlihat di ringkasan checkout. Daftar peserta yang pembayarannya sudah tercatat hanya dapat dilihat peserta grup yang sudah membayar."],
-      "chatgpt-plus-po-4": ["Patungan ChatGPT Plus (1 dari 4 peserta)", "Anda memesan satu slot patungan untuk satu paket ChatGPT Plus yang digunakan bersama oleh empat peserta. Biaya layanan patungan Rp5.000 per peserta.", "Pesanan akan membuka grup patungan baru atau bergabung ke grup ChatGPT Plus yang masih mengumpulkan peserta. Proses dimulai setelah empat peserta terdaftar dan pembayaran mereka dikonfirmasi; batas pengumpulan maksimal tujuh hari sejak grup dibuka. Harga paket per peserta Rp87.250 ditambah fee Rp5.000, lalu dipotong diskon ChatGPT; total akhir terlihat di ringkasan checkout. Daftar peserta yang pembayarannya sudah tercatat hanya dapat dilihat peserta grup yang sudah membayar."]
+      "chatgpt-plus-po-4": ["Patungan ChatGPT Plus (1 dari 4 peserta)", "Anda memesan satu slot patungan untuk satu paket ChatGPT Plus yang digunakan bersama oleh empat peserta. Biaya layanan patungan Rp5.000 per peserta.", "Pesanan akan membuka grup patungan baru atau bergabung ke grup ChatGPT Plus yang masih mengumpulkan peserta. Proses dimulai setelah empat peserta terdaftar dan pembayaran mereka dikonfirmasi; batas pengumpulan maksimal tujuh hari sejak grup dibuka. Harga paket per peserta Rp87.250 ditambah fee Rp5.000, total Rp92.250. Daftar peserta yang pembayarannya sudah tercatat hanya dapat dilihat peserta grup yang sudah membayar."]
     };
     var updateProductHelp = function () {
       if (!productHelp) return;
@@ -263,12 +274,18 @@
       var amount = parseFloat(amountInput.value) || 0;
       var fee = state.productKey ? 0 : state.poKey ? 5000 : feeFor(amount, cur);
       var priceIdr = amount * rateFor(cur);
-      // Diskon hanya untuk paket tetap (bukan Custom); server menghitung ulang nilai final.
-      var discount = activeIsFixed() ? Math.min(Math.round(DISCOUNT_USD * RATES.USD), Math.round(priceIdr)) : 0;
+      // Nilai final selalu dihitung ulang di server.
+      var premium = tabIsPremium(activeTabEl());
+      refreshBadges();
+      var cut = Math.min(Math.max(Number(FEE.cut_pct) || 0, 0), 100);
+      var feeCut = !state.productKey && !state.poKey && !premium && cut > 0;
+      if (feeCut) fee = Math.round(Math.round(fee) * (100 - cut) / 100);
+      var discount = premium ? Math.min(Math.round(DISCOUNT_USD * RATES.USD), Math.round(priceIdr)) : 0;
       var total = priceIdr + fee - discount;
       state = { amount: amount, currency: cur, fee: fee, discount: discount, total: total, plan: state.plan, productKey: state.productKey, poKey: state.poKey };
       if (costStrong[0]) costStrong[0].textContent = fmtPrice(amount, cur);
       if (costStrong[1]) costStrong[1].textContent = fmtRp(fee);
+      if (feeLabel) feeLabel.textContent = feeCut ? "Biaya Fee (hemat " + cut + "%)" : "Biaya Fee";
       if (discountRow) {
         discountRow.hidden = !discount;
         discountRow.querySelector("strong").textContent = "-" + fmtRp(discount);

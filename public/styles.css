@@ -811,6 +811,7 @@ button, input, textarea, select { font: inherit; }
 .service-cost-summary>.service-discount-row[hidden]{display:none}
 .service-cost-summary>.service-discount-row strong{color:#15803d}
 .service-discount-badge{display:block;width:max-content;margin:3px auto 0;padding:1px 6px;border-radius:999px;background:#dcfce7;color:#15803d;font-size:11px;font-weight:800;line-height:1.5}
+.service-discount-badge[hidden]{display:none}
 .service-total-amount{text-align:right;min-width:128px;display:inline-block}
 .service-order-button{color:#fff;background:var(--red);border-radius:999px;justify-content:center;align-items:center;gap:12px;min-height:46px;margin-top:14px;font-weight:900;display:inline-flex;position:relative;overflow:hidden}
 .service-order-button:not(.is-disabled):after{pointer-events:none;content:"";background:linear-gradient(105deg,#0000 0%,#ffffff1a 30%,#ffffff9e 50%,#ffffff1a 70%,#0000 100%);width:46%;animation:3s ease-in-out infinite button-shine;position:absolute;inset:-42% auto -42% -70%;transform:skew(-18deg)}

@@ -19,7 +19,7 @@ import {
 import { ORDER_STATUSES, STATUS_LABELS, accountsError } from '../_lib/payment.js';
 import { qrisError } from '../_lib/qris.js';
 
-const NUMERIC_SETTINGS = ['fee_idr_base', 'fee_idr_pct', 'fee_usd_min', 'fee_usd_min_threshold', 'fee_usd_base', 'fee_usd_pct', 'min_order_idr', 'min_order_usd', 'ai_enabled', 'ai_delay_min', 'ai_delay_max', 'ai_queue_min', 'ai_queue_max', 'qris_max', 'invoice_hours'];
+const NUMERIC_SETTINGS = ['fee_idr_base', 'fee_idr_pct', 'fee_usd_min', 'fee_usd_min_threshold', 'fee_usd_base', 'fee_usd_pct', 'fee_cut_pct', 'min_order_idr', 'min_order_usd', 'ai_enabled', 'ai_delay_min', 'ai_delay_max', 'ai_queue_min', 'ai_queue_max', 'qris_max', 'invoice_hours'];
 // Aksi yang mengubah data wajib POST (+ header X-Requested-With dari requireAdmin) agar tidak bisa dipicu lewat link GET (CSRF).
 const WRITE_ACTIONS = new Set(['reply', 'conv_ai', 'ai_test', 'conv_status', 'conv_delete', 'order_status', 'order_note', 'order_delete', 'service_save', 'service_toggle', 'service_delete', 'service_sort', 'settings_save', 'password']);
 
