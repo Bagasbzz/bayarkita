@@ -101,7 +101,7 @@ export function defaultSettings() {
     fee_cut_pct: 10,
     rate_USD: 18600, rate_EUR: 21500, rate_GBP: 24800, rate_JPY: 125, rate_CNY: 2600, rate_THB: 570, rate_MYR: 4400,
     min_order_idr: 20000, min_order_usd: 1,
-    wa_number: '628127968494', telegram: 'bayarkitaid',
+    wa_number: '62895631223200', telegram: 'bayarkitaofficial',
     chat_greeting: 'Halo! Ada yang bisa kami bantu? Tulis pesan Anda di sini, admin akan membalas secepatnya.',
     chat_offline_note: 'Admin sedang offline. Pesan Anda tetap tersimpan dan akan dibalas saat admin online.',
     order_auto_reply: 'Terima kasih, pesanan Anda sudah kami terima. Silakan selesaikan pembayaran lewat halaman invoice (rekening & QRIS tersedia di sana), lalu konfirmasi ke admin.',
