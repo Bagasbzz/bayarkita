@@ -1,3 +1,4 @@
+# Existing infrastructure identity; Goisiinn uses the same project, secrets, and data.
 name = "bayarkita"
 compatibility_date = "2026-10-01"
 pages_build_output_dir = "public"

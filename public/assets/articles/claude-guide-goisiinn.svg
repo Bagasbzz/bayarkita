@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Claude Pro dan Max</title>
+  <desc id="desc">Ilustrasi editorial Goisiinn tentang dokumen dan pilihan paket langganan AI.</desc>
+  <defs>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0H0V48" fill="none" stroke="#e4d9ca" stroke-width="1"/></pattern>
+    <linearGradient id="paper" x2="0.8" y2="1"><stop stop-color="#fffdf8"/><stop offset="1" stop-color="#eadbc7"/></linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="#f4ede2"/><rect x="596" width="604" height="675" fill="url(#grid)"/>
+  <circle cx="1050" cy="95" r="225" fill="#e7b59b" opacity=".45"/>
+  <path d="M0 611H1200" stroke="#ddcdbc"/><path d="M600 0V675" stroke="#ddcdbc"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#202b33">
+    <rect x="56" y="50" width="34" height="34" rx="10" fill="#f97316"/><path d="m65 67 6 6 11-14" stroke="#fff" stroke-width="4" fill="none"/>
+    <text x="103" y="76" font-size="26" font-weight="700">Goisiinn</text>
+    <text x="58" y="195" font-size="16" letter-spacing="4" fill="#9c5037">CATATAN LANGGANAN AI</text>
+    <text x="54" y="291" font-size="78" font-weight="700">Claude</text>
+    <text x="58" y="358" font-size="51" fill="#ae5d3e">Pro atau Max?</text>
+    <text x="58" y="431" font-size="24">Kenali paketnya.</text><text x="58" y="467" font-size="24">Rencanakan pembayarannya.</text>
+    <text x="58" y="650" font-size="15" letter-spacing="2">PANDUAN GOISIINN</text><text x="1100" y="650" font-size="18">01</text>
+  </g>
+  <g transform="translate(701 153) rotate(7 185 215)">
+    <rect x="14" y="18" width="340" height="390" rx="20" fill="#9c6549" opacity=".13"/>
+    <rect width="340" height="390" rx="20" fill="url(#paper)" stroke="#cdb69f" stroke-width="2"/>
+    <path d="M38 70H203M38 90H153" stroke="#202b33" stroke-width="9" stroke-linecap="round"/>
+    <path d="M38 161H288M38 190H267M38 219H280M38 248H200" stroke="#d5c6b4" stroke-width="8" stroke-linecap="round"/>
+    <rect x="35" y="293" width="270" height="57" rx="12" fill="#202b33"/>
+    <path d="m55 321 10 10 20-24" fill="none" stroke="#f7b28c" stroke-width="5"/>
+    <text x="103" y="330" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#fff">Pilihan paket</text>
+  </g>
+  <g transform="translate(1034 189)" stroke="#b75c3b" stroke-width="10" stroke-linecap="round"><path d="M-59 0H59M0-59V59M-42-42 42 42M-42 42 42-42M-23-55 23 55M-55 23 55-23M-55-23 55 23M-23 55 23-55"/></g>
+  <circle cx="701" cy="494" r="52" fill="#f97316"/><path d="m680 494 15 15 28-33" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Panduan pembayaran internasional</title><desc id="desc">Ilustrasi globe, kartu Goisiinn, dan perlindungan transaksi lintas negara.</desc>
+  <defs><pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0H0V48" fill="none" stroke="#2e3a4a"/></pattern><linearGradient id="card" x2="1" y2="1"><stop stop-color="#fb923c"/><stop offset="1" stop-color="#c64c18"/></linearGradient></defs>
+  <rect width="1200" height="675" fill="#17222e"/><rect x="600" width="600" height="675" fill="url(#grid)"/><path d="M0 611H1200" stroke="#3a4655"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#fff5e9">
+    <rect x="56" y="50" width="34" height="34" rx="10" fill="#f97316"/><path d="m65 67 6 6 11-14" stroke="#fff" stroke-width="4" fill="none"/><text x="103" y="76" font-size="26" font-weight="700">Goisiinn</text>
+    <text x="58" y="195" font-size="16" letter-spacing="4" fill="#f7b583">TRANSAKSI LINTAS NEGARA</text>
+    <text x="54" y="277" font-size="62" font-weight="700">Pembayaran</text><text x="54" y="350" font-size="62" font-weight="700">Internasional</text>
+    <text x="58" y="431" font-size="24">Kenali kurs dan biaya.</text><text x="58" y="467" font-size="24">Jaga keamanan transaksi.</text>
+    <text x="58" y="650" font-size="15" letter-spacing="2">PANDUAN GOISIINN</text><text x="1100" y="650" font-size="18">06</text>
+  </g>
+  <g transform="translate(943 275)" fill="none" stroke="#6c8297" stroke-width="2"><circle r="169" fill="#233344"/><ellipse rx="75" ry="169"/><ellipse rx="134" ry="169"/><ellipse rx="169" ry="58"/><path d="M-169 0H169M0-169V169M-146-84H146M-146 84H146"/>
+    <path d="M-190 103C-105-104 186-207 194-70S-117 204-190 103Z" stroke="#f6bb88" stroke-dasharray="7 10"/><circle cx="-120" cy="-64" r="8" fill="#f97316" stroke="none"/><circle cx="116" cy="124" r="8" fill="#f97316" stroke="none"/>
+  </g>
+  <g transform="translate(686 342) rotate(-9 171 106)"><rect x="10" y="14" width="350" height="214" rx="24" fill="#0c151f"/><rect width="350" height="214" rx="24" fill="url(#card)"/>
+    <g font-family="Arial, Helvetica, sans-serif" fill="#fff"><text x="28" y="46" font-size="23" font-weight="700">Goisiinn</text><text x="28" y="157" font-size="27" letter-spacing="5">0000 0000 0000</text><text x="28" y="187" font-size="13" letter-spacing="2">ILUSTRASI PEMBAYARAN</text></g>
+    <rect x="30" y="74" width="46" height="34" rx="7" fill="#ffd9a3"/><path d="M30 91H76M53 74V108" stroke="#cb9b63"/><circle cx="295" cy="42" r="14" fill="#fff" opacity=".65"/><circle cx="314" cy="42" r="14" fill="#fff" opacity=".3"/>
+  </g><path d="m1082 410 57 23v44c0 43-57 69-57 69s-57-26-57-69v-44Z" fill="#e6eddf" stroke="#17222e" stroke-width="5"/><path d="m1058 474 17 17 31-37" stroke="#3c654f" stroke-width="8" stroke-linecap="round" fill="none"/>
+</svg>

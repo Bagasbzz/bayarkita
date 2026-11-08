@@ -4,19 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Admin Dashboard - BayarKita</title>
-<link rel="icon" href="../assets/logo-bayarkita.svg">
-<link rel="stylesheet" href="../styles.css?v=20261105a">
-<link rel="stylesheet" href="admin.css?v=20261104">
+<title>Admin Dashboard - Goisiinn</title>
+<link rel="icon" href="../assets/logo-goisiinn.svg">
+<link rel="stylesheet" href="../styles.css?v=20261108a">
+<link rel="stylesheet" href="admin.css?v=20261108a">
 </head>
 <body class="admin-body">
 
 <!-- Login -->
 <section class="admin-login" id="login" hidden>
   <form class="admin-login-card" id="login-form" novalidate>
-    <span class="admin-login-logo"><img src="../assets/logo-bayarkita.svg" alt="BayarKita"></span>
+    <span class="admin-login-logo"><img src="../assets/logo-goisiinn.svg" alt="Goisiinn"></span>
     <h1>Masuk Admin</h1>
-    <p>Dashboard pengelolaan chat, pesanan, dan pengaturan BayarKita.</p>
+    <p>Dashboard pengelolaan chat, pesanan, dan pengaturan Goisiinn.</p>
     <label>Username<span class="checkout-input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg><input name="username" autocomplete="username" placeholder="Username" required></span></label>
     <label>Password<span class="checkout-input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><input name="password" type="password" autocomplete="current-password" placeholder="Password" required></span></label>
     <p class="checkout-error" id="login-error" hidden></p>
@@ -27,7 +27,7 @@
 <!-- App -->
 <div class="admin-app" id="app" hidden>
   <aside class="admin-sidebar" id="sidebar">
-    <a class="admin-brand" href="../index.html" target="_blank" rel="noreferrer"><img src="../assets/logo-bayarkita.svg" alt=""><span>BayarKita <small>Admin</small></span></a>
+    <a class="admin-brand" href="../index.html" target="_blank" rel="noreferrer"><img src="../assets/logo-goisiinn.svg" alt=""><span>Goisiinn <small>Admin</small></span></a>
     <nav class="admin-nav">
       <a href="#dashboard" data-view="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Dashboard</a>
       <a href="#inbox" data-view="inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Chat<span class="admin-nav-badge" id="badge-inbox" hidden>0</span></a>
@@ -140,7 +140,7 @@
         <form class="admin-card admin-form" id="chat-form">
           <div class="admin-card-head"><h2>Chat &amp; Kontak</h2></div>
           <label>Nomor WhatsApp (628…)<input name="wa_number"></label>
-          <label>Username Telegram<input name="telegram"></label>
+          <label>Username Telegram (opsional)<input name="telegram"></label>
           <label>Sapaan awal chat<textarea name="chat_greeting" rows="2"></textarea></label>
           <label>Balasan otomatis setelah pesanan<textarea name="order_auto_reply" rows="3"></textarea></label>
           <label>Catatan saat admin offline<textarea name="chat_offline_note" rows="2"></textarea></label>
@@ -184,6 +184,6 @@
 <div class="checkout-modal-overlay admin-modal" id="modal" hidden><section class="checkout-modal admin-modal-card" role="dialog" aria-modal="true"><button class="checkout-modal-close" id="modal-close" type="button" aria-label="Tutup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button><div id="modal-body"></div></section></div>
 <div class="admin-toast" id="toast" hidden></div>
 
-<script src="admin.js?v=20261104" defer></script>
+<script src="admin.js?v=20261108a" defer></script>
 </body>
 </html>

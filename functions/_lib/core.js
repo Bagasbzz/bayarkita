@@ -6,6 +6,7 @@
  * Konvensi: setiap handler menerima `ctx` = { env, request, url, db, input }.
  */
 import { hashPassword, randomHex } from './password.js';
+import { normalizeLocale, tr } from './i18n.js';
 
 // ---------- Error terkontrol ----------
 export class ApiError extends Error {
@@ -101,11 +102,11 @@ export function defaultSettings() {
     fee_cut_pct: 10,
     rate_USD: 18600, rate_EUR: 21500, rate_GBP: 24800, rate_JPY: 125, rate_CNY: 2600, rate_THB: 570, rate_MYR: 4400,
     min_order_idr: 20000, min_order_usd: 1,
-    wa_number: '62895631223200', telegram: 'bayarkitaofficial',
+    wa_number: '62895631223200', telegram: '',
     chat_greeting: 'Halo! Ada yang bisa kami bantu? Tulis pesan Anda di sini, admin akan membalas secepatnya.',
     chat_offline_note: 'Admin sedang offline. Pesan Anda tetap tersimpan dan akan dibalas saat admin online.',
     order_auto_reply: 'Terima kasih, pesanan Anda sudah kami terima. Silakan selesaikan pembayaran lewat halaman invoice (rekening & QRIS tersedia di sana), lalu konfirmasi ke admin.',
-    quick_replies: 'Halo, terima kasih sudah menghubungi BayarKita. Ada yang bisa kami bantu?\nPesanan Anda sedang kami proses, mohon tunggu sebentar ya.\nSilakan transfer ke rekening berikut lalu kirim bukti transfernya di sini.\nPembayaran sudah kami terima, pesanan akan segera diproses.\nPesanan Anda sudah selesai. Terima kasih sudah menggunakan jasa BayarKita!',
+    quick_replies: 'Halo, terima kasih sudah menghubungi Goisiinn. Ada yang bisa kami bantu?\nPesanan Anda sedang kami proses, mohon tunggu sebentar ya.\nSilakan transfer ke rekening berikut lalu kirim bukti transfernya di sini.\nPembayaran sudah kami terima, pesanan akan segera diproses.\nPesanan Anda sudah selesai. Terima kasih sudah menggunakan jasa Goisiinn!',
     admin_last_seen: '',
     // Live Chat AI
     ai_enabled: 1,
@@ -231,11 +232,22 @@ export function fmtAmount(n, cur) {
   return sym + Number(n).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
 }
 
-export function normalizePhone(phone) {
+export function normalizePhone(phone, locale = 'id') {
   let d = String(phone).replace(/\D+/g, '');
-  if (d.startsWith('0')) d = '62' + d.slice(1);
-  if (d.startsWith('8')) d = '62' + d;
+  const fallbackPrefix = normalizeLocale(locale) === 'ms' ? '60' : '62';
+  // Nomor lokal umum tetap dikenali meskipun pengunjung mengganti bahasa:
+  // Indonesia 08…, Malaysia 01…. Nomor dengan kode negara dibiarkan utuh.
+  if (d.startsWith('08')) d = '62' + d.slice(1);
+  else if (d.startsWith('01')) d = '60' + d.slice(1);
+  else if (d.startsWith('0')) d = fallbackPrefix + d.slice(1);
+  else if (d.startsWith('8')) d = '62' + d;
+  else if (d.startsWith('1')) d = '60' + d;
   return d;
+}
+
+/** Nomor seluler Indonesia/Malaysia dalam format E.164 tanpa tanda +. */
+export function supportedPhone(phone) {
+  return /^(?:628\d{8,11}|601\d{8,9})$/.test(String(phone || ''));
 }
 
 // ---------- Percakapan & pesan ----------
@@ -244,14 +256,15 @@ export async function conversationByToken(db, token) {
   return (await db.prepare('SELECT * FROM conversations WHERE token = ?').bind(token).first()) || null;
 }
 
-export async function createConversation(db, settings, name, phone, agent = null, connectedAt = null) {
+export async function createConversation(db, settings, name, phone, agent = null, connectedAt = null, locale = 'id') {
   const token = randomHex();
   const ts = now();
-  await db.prepare('INSERT INTO conversations (token, name, phone, status, created_at, customer_seen_at, agent, connected_at) VALUES (?,?,?,?,?,?,?,?)')
-    .bind(token, name, phone, 'open', ts, ts, agent, connectedAt).run();
+  locale = normalizeLocale(locale);
+  await db.prepare('INSERT INTO conversations (token, name, phone, status, created_at, customer_seen_at, agent, connected_at, locale) VALUES (?,?,?,?,?,?,?,?,?)')
+    .bind(token, name, phone, 'open', ts, ts, agent, connectedAt, locale).run();
   const conv = await conversationByToken(db, token);
   // Tanpa agen (chat lama / AI mati): kirim sapaan statis. Dengan agen: sapaan dikirim saat tersambung.
-  if (!agent) await addMessage(db, conv.id, 'system', settings.chat_greeting);
+  if (!agent) await addMessage(db, conv.id, 'system', locale === 'id' ? settings.chat_greeting : tr(locale, 'static_greeting'));
   return conv;
 }
 

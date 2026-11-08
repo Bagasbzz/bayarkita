@@ -16,7 +16,7 @@ import { complete, scheduleAiReply } from '../_lib/ai.js';
 import {
   createSession, destroySession, currentAdmin, requireAdmin, assertLoginAllowed, recordLoginFail, clearLoginFails,
 } from '../_lib/auth.js';
-import { ORDER_STATUSES, STATUS_LABELS, accountsError } from '../_lib/payment.js';
+import { ORDER_STATUSES, STATUS_LABELS, statusLabel, accountsError } from '../_lib/payment.js';
 import { qrisError } from '../_lib/qris.js';
 
 const NUMERIC_SETTINGS = ['fee_idr_base', 'fee_idr_pct', 'fee_usd_min', 'fee_usd_min_threshold', 'fee_usd_base', 'fee_usd_pct', 'fee_cut_pct', 'min_order_idr', 'min_order_usd', 'ai_enabled', 'ai_delay_min', 'ai_delay_max', 'ai_queue_min', 'ai_queue_max', 'qris_max', 'invoice_hours'];
@@ -108,7 +108,7 @@ export async function onRequest({ data, env }) {
       else if (filter === 'open') where.push("c.status = 'open'");
       else if (filter === 'closed') where.push("c.status = 'closed'");
       if (qs) { where.push('(c.name LIKE ? OR c.phone LIKE ? OR c.last_message LIKE ?)'); p.push(`%${qs}%`, `%${qs}%`, `%${qs}%`); }
-      const sql = `SELECT c.id, c.name, c.phone, c.status, c.unread_admin, c.last_message, c.last_sender, c.last_at, c.created_at, c.agent, c.ai_enabled,
+      const sql = `SELECT c.id, c.name, c.phone, c.status, c.unread_admin, c.last_message, c.last_sender, c.last_at, c.created_at, c.agent, c.ai_enabled, c.account_type, c.locale,
         (SELECT COUNT(*) FROM orders o WHERE o.conversation_id = c.id) AS order_count
         FROM conversations c${where.length ? ' WHERE ' + where.join(' AND ') : ''} ORDER BY COALESCE(c.last_at, c.created_at) DESC LIMIT 200`;
       const rows = (await db.prepare(sql).bind(...p).all()).results.map((r) => ({ ...r, id: Number(r.id), unread_admin: Number(r.unread_admin), order_count: Number(r.order_count) }));
@@ -119,11 +119,11 @@ export async function onRequest({ data, env }) {
     case 'messages': {
       const id = parseInt(q(url, 'id', '0'), 10) || 0;
       const since = parseInt(q(url, 'since', '0'), 10) || 0;
-      const conv = await db.prepare('SELECT id, name, phone, status, created_at, agent, ai_enabled FROM conversations WHERE id = ?').bind(id).first();
+      const conv = await db.prepare('SELECT id, name, phone, status, created_at, agent, ai_enabled, account_type, locale FROM conversations WHERE id = ?').bind(id).first();
       if (!conv) fail('Percakapan tidak ditemukan.', 404);
       const msgs = await messagesSince(db, id, since, 500);
       if (since === 0 || msgs.length) await db.prepare('UPDATE conversations SET unread_admin = 0 WHERE id = ?').bind(id).run();
-      const orders = (await db.prepare('SELECT id, code, service_name, plan, amount, currency, fee, total, status, created_at FROM orders WHERE conversation_id = ? ORDER BY id DESC').bind(id).all()).results;
+      const orders = (await db.prepare('SELECT id, code, service_name, plan, amount, unit_amount, quantity, currency, amount_idr, fee, discount, seller_discount, total, status, locale, created_at FROM orders WHERE conversation_id = ? ORDER BY id DESC').bind(id).all()).results;
       return ok({ conversation: conv, messages: msgs, orders });
     }
 
@@ -199,7 +199,9 @@ export async function onRequest({ data, env }) {
       const paidAt = ['dibayar', 'diproses', 'selesai'].includes(status) ? (o.paid_at || now()) : null;
       await db.prepare('UPDATE orders SET status = ?, paid_at = ?, updated_at = ? WHERE id = ?').bind(status, paidAt, now(), id).run();
       if (o.status !== status) {
-        const text = `Status pesanan #${o.code} diperbarui menjadi: ${STATUS_LABELS[status]}.` + (note ? `\n${note}` : '');
+        const text = String(o.locale) === 'ms'
+          ? `Status pesanan #${o.code} dikemas kini kepada: ${statusLabel(status, 'ms')}.` + (note ? `\n${note}` : '')
+          : `Status pesanan #${o.code} diperbarui menjadi: ${STATUS_LABELS[status]}.` + (note ? `\n${note}` : '');
         await addMessage(db, Number(o.conversation_id), 'system', text, { type: 'status', order_id: id, code: o.code, status });
       } else if (note) {
         await addMessage(db, Number(o.conversation_id), 'admin', note);
@@ -219,10 +221,10 @@ export async function onRequest({ data, env }) {
 
     case 'export_orders': {
       const rows = (await db.prepare('SELECT * FROM orders ORDER BY id DESC').all()).results;
-      const head = ['Kode', 'Tanggal', 'Pelanggan', 'WhatsApp', 'Email Undangan', 'Layanan', 'Paket', 'Jumlah', 'Mata Uang', 'Kurs', 'Nominal IDR', 'Fee', 'Diskon', 'Total', 'Status', 'Catatan'];
+      const head = ['Kode', 'Tanggal', 'Pelanggan', 'WhatsApp', 'Email Undangan', 'Layanan', 'Paket', 'Kuantitas', 'Jumlah', 'Mata Uang', 'Kurs', 'Nominal IDR', 'Fee', 'Diskon Seller', 'Total Diskon', 'Total', 'Status', 'Locale', 'Catatan'];
       const lines = [head.map(csvCell).join(',')];
       for (const o of rows) {
-        lines.push([o.code, o.created_at, o.customer_name, o.phone, o.customer_email || '', o.service_name, o.plan, o.amount, o.currency, o.rate, o.amount_idr, o.fee, o.discount || 0, o.total, o.status, o.note].map(csvCell).join(','));
+        lines.push([o.code, o.created_at, o.customer_name, o.phone, o.customer_email || '', o.service_name, o.plan, o.quantity || 1, o.amount, o.currency, o.rate, o.amount_idr, o.fee, o.seller_discount || 0, o.discount || 0, o.total, o.status, o.locale || 'id', o.note].map(csvCell).join(','));
       }
       const stamp = now().replace(/[-:]/g, '').replace(' ', '-');
       return new Response('\uFEFF' + lines.join('\r\n'), {

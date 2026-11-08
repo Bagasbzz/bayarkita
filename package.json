@@ -1,10 +1,10 @@
 {
-  "name": "bayarkita",
+  "name": "goisiinn",
   "version": "2.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler pages dev public --d1 DB=bayarkita --local",
+    "dev": "wrangler pages dev public",
     "db:migrate:local": "wrangler d1 execute bayarkita --local --file=./schema.sql",
     "db:migrate": "wrangler d1 execute bayarkita --remote --file=./schema.sql",
     "db:invoice:local": "wrangler d1 execute bayarkita --local --file=./migrations/003_invoice_payment.sql",
@@ -13,16 +13,18 @@
     "db:seats": "wrangler d1 execute bayarkita --remote --file=./migrations/004_seat_orders.sql",
     "db:po:local": "wrangler d1 execute bayarkita --local --file=./migrations/005_po_groups.sql",
     "db:po": "wrangler d1 execute bayarkita --remote --file=./migrations/005_po_groups.sql",
-    "db:brand:local": "wrangler d1 execute bayarkita --local --file=./migrations/006_bayarkita_brand.sql",
-    "db:brand": "wrangler d1 execute bayarkita --remote --file=./migrations/006_bayarkita_brand.sql",
+    "db:brand:local": "wrangler d1 execute bayarkita --local --file=./migrations/010_goisiinn_brand.sql",
+    "db:brand": "wrangler d1 execute bayarkita --remote --file=./migrations/010_goisiinn_brand.sql",
     "db:analytics:local": "wrangler d1 execute bayarkita --local --file=./migrations/007_visitor_analytics.sql",
     "db:analytics": "wrangler d1 execute bayarkita --remote --file=./migrations/007_visitor_analytics.sql",
     "db:discount:local": "wrangler d1 execute bayarkita --local --file=./migrations/008_order_discount.sql",
     "db:discount": "wrangler d1 execute bayarkita --remote --file=./migrations/008_order_discount.sql",
     "db:feecut:local": "wrangler d1 execute bayarkita --local --file=./migrations/009_fee_cut_promo.sql",
     "db:feecut": "wrangler d1 execute bayarkita --remote --file=./migrations/009_fee_cut_promo.sql",
-    "deploy": "wrangler pages deploy public",
-    "test": "node scripts/test-qris.mjs"
+    "db:seller:local": "wrangler d1 execute bayarkita --local --file=./migrations/011_seller_locale.sql",
+    "db:seller": "wrangler d1 execute bayarkita --remote --file=./migrations/011_seller_locale.sql",
+    "deploy": "wrangler pages deploy public --project-name bayarkita",
+    "test": "node scripts/test-qris.mjs && node scripts/test-articles.mjs && node scripts/test-brand.mjs && node scripts/test-seller-locale.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"

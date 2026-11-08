@@ -4,10 +4,13 @@
  */
 import { now, fmtLocal, parseLocal } from './core.js';
 import { qrisError, qrisMerchant } from './qris.js';
+import { normalizeLocale } from './i18n.js';
 
 // baru = menunggu pembayaran; dibayar = sudah dikonfirmasi admin.
 export const ORDER_STATUSES = ['baru', 'dibayar', 'diproses', 'selesai', 'batal'];
 export const STATUS_LABELS = { baru: 'Menunggu Pembayaran', dibayar: 'Dibayar', diproses: 'Diproses', selesai: 'Selesai', batal: 'Dibatalkan' };
+const STATUS_LABELS_MS = { baru: 'Menunggu Pembayaran', dibayar: 'Dibayar', diproses: 'Sedang Diproses', selesai: 'Selesai', batal: 'Dibatalkan' };
+export const statusLabel = (status, locale = 'id') => (normalizeLocale(locale) === 'ms' ? STATUS_LABELS_MS : STATUS_LABELS)[status] || status;
 export const PAID_STATUSES = ['dibayar', 'diproses', 'selesai'];
 
 // Kode di setting payment_accounts -> nama tampilan & logo.
@@ -73,6 +76,7 @@ export function qrisAvailable(settings, total) {
 
 /** Data publik untuk halaman invoice (tanpa nomor WhatsApp pelanggan). */
 export function invoiceView(order, settings) {
+  const locale = normalizeLocale(order.locale);
   const expired = isExpired(order);
   const confirmed = PAID_STATUSES.includes(order.status);
   const payable = order.status === 'baru' && !expired;
@@ -84,13 +88,17 @@ export function invoiceView(order, settings) {
     service: order.service_name,
     plan: order.plan || '',
     amount: Number(order.amount),
+    unit_amount: Number(order.unit_amount ?? order.amount),
+    quantity: Number(order.quantity) || 1,
     currency: order.currency,
     amount_idr: Number(order.amount_idr),
+    unit_amount_idr: Number(order.unit_amount_idr ?? order.amount_idr),
     fee: Number(order.fee),
     discount: Number(order.discount) || 0,
+    seller_discount: Number(order.seller_discount) || 0,
     total: Number(order.total),
     status: expired ? 'kedaluwarsa' : order.status,
-    status_label: expired ? 'Kedaluwarsa' : STATUS_LABELS[order.status] || order.status,
+    status_label: expired ? (locale === 'ms' ? 'Tamat Tempoh' : 'Kedaluwarsa') : statusLabel(order.status, locale),
     confirmed,
     payable,
     created_at: order.created_at,
@@ -98,6 +106,7 @@ export function invoiceView(order, settings) {
     // Epoch ms agar klien tidak perlu tahu zona waktu server.
     expires_ts: order.expires_at ? parseLocal(order.expires_at) : 0,
     wa_number: String(settings.wa_number || '').replace(/\D/g, ''),
+    locale,
     qris: qrisValid ? {
       available: qrisAvailable(settings, order.total),
       merchant: qrisMerchant(settings.qris_payload),

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Keanggotaan kreator di Patreon</title><desc id="desc">Ilustrasi kreator, dukungan komunitas, dan kalender langganan dari Goisiinn.</desc>
+  <defs><pattern id="lines" width="35" height="35" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><path d="M0 0V35" stroke="#edd3be" stroke-width="2"/></pattern></defs>
+  <rect width="1200" height="675" fill="#fff0df"/><path d="M655 0H1200V675H505Z" fill="#f2d5c0"/><rect x="700" width="500" height="675" fill="url(#lines)"/>
+  <path d="M0 611H1200" stroke="#dabda8"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#342c31">
+    <rect x="56" y="50" width="34" height="34" rx="10" fill="#f97316"/><path d="m65 67 6 6 11-14" stroke="#fff" stroke-width="4" fill="none"/><text x="103" y="76" font-size="26" font-weight="700">Goisiinn</text>
+    <text x="58" y="195" font-size="16" letter-spacing="4" fill="#a34c39">KREATOR &amp; KOMUNITAS</text>
+    <text x="54" y="291" font-size="78" font-weight="700">Patreon</text><text x="58" y="358" font-size="48" fill="#a34c39">Dukungan berarti.</text>
+    <text x="58" y="431" font-size="24">Kenali manfaat keanggotaan</text><text x="58" y="467" font-size="24">dan jadwal pembayarannya.</text>
+    <text x="58" y="650" font-size="15" letter-spacing="2">PANDUAN GOISIINN</text><text x="1100" y="650" font-size="18">03</text>
+  </g>
+  <g transform="translate(699 131) rotate(-7 170 207)">
+    <rect x="12" y="16" width="318" height="390" rx="20" fill="#9b6354" opacity=".18"/><rect width="318" height="390" rx="20" fill="#fffaf2"/>
+    <rect x="22" y="22" width="274" height="230" rx="12" fill="#e38c6d"/>
+    <path d="M55 252C60 166 253 166 264 252" fill="#604950"/><ellipse cx="160" cy="135" rx="48" ry="55" fill="#f3c5a5"/>
+    <path d="M109 130C80 37 228 42 213 140L185 107 151 120 118 98Z" fill="#342c31"/>
+    <path d="M42 290H183M42 319H265M42 343H216" stroke="#dac4b3" stroke-width="9" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(933 363) rotate(8 100 90)"><rect width="201" height="168" rx="18" fill="#342c31"/><path d="M0 47H201" stroke="#6e5b63"/><path d="M52-9V15M149-9V15" stroke="#a34c39" stroke-width="10" stroke-linecap="round"/>
+    <g fill="#b899a4"><circle cx="42" cy="77" r="6"/><circle cx="81" cy="77" r="6"/><circle cx="120" cy="77" r="6"/><circle cx="159" cy="77" r="6"/><circle cx="42" cy="118" r="6"/><circle cx="81" cy="118" r="6"/></g>
+    <path d="M151 107c-22-26-46 6 0 31 46-25 22-57 0-31" fill="#ff9b72"/>
+  </g><circle cx="1063" cy="173" r="43" fill="#f97316"/><path d="m1044 175 12 12 25-28" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+</svg>

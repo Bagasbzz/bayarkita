@@ -43,7 +43,9 @@ CREATE TABLE IF NOT EXISTS conversations (
   created_at       TEXT NOT NULL,
   agent            TEXT,                        -- nama persona AI yang menangani
   ai_enabled       INTEGER NOT NULL DEFAULT 1,  -- 0 = admin manusia ambil alih
-  connected_at     TEXT                         -- waktu "terhubung dengan agen" (setelah antrian)
+  connected_at     TEXT,                        -- waktu "terhubung dengan agen" (setelah antrian)
+  account_type     TEXT NOT NULL DEFAULT 'customer', -- customer | seller
+  locale           TEXT NOT NULL DEFAULT 'id'   -- id | ms
 );
 
 CREATE TABLE IF NOT EXISTS messages (
@@ -80,7 +82,12 @@ CREATE TABLE IF NOT EXISTS orders (
   customer_email TEXT,                           -- email tujuan undangan seat (khusus admin)
   product_key     TEXT,                           -- snapshot key paket promo seat/PO
   po_group_id     INTEGER,                        -- grup PO plan umum bila ada
-  discount        REAL NOT NULL DEFAULT 0         -- potongan harga (IDR) yang sudah dikurangkan dari total
+  discount        REAL NOT NULL DEFAULT 0,        -- semua potongan (IDR) yang sudah dikurangkan dari total
+  quantity        INTEGER NOT NULL DEFAULT 1,
+  unit_amount     REAL,                           -- nominal satu produk dalam currency
+  unit_amount_idr REAL,                           -- nilai satu produk dalam rupiah
+  seller_discount REAL NOT NULL DEFAULT 0,
+  locale          TEXT NOT NULL DEFAULT 'id'
 );
 
 CREATE TABLE IF NOT EXISTS po_groups (

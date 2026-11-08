@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Panduan langganan ChatGPT</title><desc id="desc">Ilustrasi percakapan AI dan peninjauan tagihan dengan identitas Goisiinn.</desc>
+  <defs><pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1.5" fill="#35534f"/></pattern><linearGradient id="panel" x2="1" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#d6ebe2"/></linearGradient></defs>
+  <rect width="1200" height="675" fill="#152f2b"/><rect x="600" width="600" height="675" fill="url(#dots)"/>
+  <circle cx="1065" cy="325" r="258" fill="none" stroke="#365c50" stroke-width="2"/><circle cx="1065" cy="325" r="209" fill="none" stroke="#365c50"/>
+  <path d="M0 611H1200" stroke="#35534f"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#f5f4ed">
+    <rect x="56" y="50" width="34" height="34" rx="10" fill="#f97316"/><path d="m65 67 6 6 11-14" stroke="#fff" stroke-width="4" fill="none"/><text x="103" y="76" font-size="26" font-weight="700">Goisiinn</text>
+    <text x="58" y="195" font-size="16" letter-spacing="4" fill="#add1bc">RUANG PRODUKTIVITAS</text>
+    <text x="54" y="291" font-size="78" font-weight="700">ChatGPT</text><text x="58" y="358" font-size="49" fill="#add1bc">Mulai lebih siap.</text>
+    <text x="58" y="431" font-size="24">Pilih paket yang tepat.</text><text x="58" y="467" font-size="24">Kelola tagihan dengan jelas.</text>
+    <text x="58" y="650" font-size="15" letter-spacing="2">PANDUAN GOISIINN</text><text x="1100" y="650" font-size="18">02</text>
+  </g>
+  <g transform="translate(673 151) rotate(-5 210 190)">
+    <rect x="12" y="18" width="430" height="355" rx="24" fill="#071c17"/>
+    <rect width="430" height="355" rx="24" fill="url(#panel)"/>
+    <path d="M0 63H430" stroke="#c8dcd2"/><g fill="#8fae9f"><circle cx="33" cy="32" r="6"/><circle cx="55" cy="32" r="6"/><circle cx="77" cy="32" r="6"/></g>
+    <rect x="141" y="91" width="257" height="58" rx="18" fill="#bdd8c9"/><path d="M165 121H369" stroke="#648676" stroke-width="7" stroke-linecap="round"/>
+    <rect x="32" y="173" width="301" height="104" rx="18" fill="#fff"/><path d="M58 201H295M58 224H278M58 247H233" stroke="#9bb8aa" stroke-width="7" stroke-linecap="round"/>
+    <rect x="32" y="299" width="366" height="32" rx="16" fill="#d2e2d8"/><circle cx="378" cy="315" r="12" fill="#235344"/><path d="m373 315 5-5 5 5M378 310V321" fill="none" stroke="#fff" stroke-width="2"/>
+  </g>
+  <g transform="translate(916 463)"><rect width="206" height="85" rx="16" fill="#f97316"/><circle cx="36" cy="43" r="17" fill="none" stroke="#fff" stroke-width="3"/><path d="m27 43 6 6 13-14" stroke="#fff" fill="none" stroke-width="3"/><text x="64" y="50" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700">Cek tagihan</text></g>
+</svg>

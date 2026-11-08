@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Persiapan Google Play Console</title><desc id="desc">Ilustrasi ponsel Android, aplikasi, dan daftar verifikasi developer dari Goisiinn.</desc>
+  <defs><pattern id="dots" width="35" height="35" patternUnits="userSpaceOnUse"><circle cx="4" cy="4" r="2" fill="#d1decf"/></pattern></defs>
+  <rect width="1200" height="675" fill="#eef3e9"/><rect x="600" width="600" height="675" fill="url(#dots)"/><circle cx="945" cy="312" r="244" fill="#cfe0bf"/>
+  <path d="M0 611H1200" stroke="#c3d3be"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#253a31">
+    <rect x="56" y="50" width="34" height="34" rx="10" fill="#f97316"/><path d="m65 67 6 6 11-14" stroke="#fff" stroke-width="4" fill="none"/><text x="103" y="76" font-size="26" font-weight="700">Goisiinn</text>
+    <text x="58" y="195" font-size="16" letter-spacing="4" fill="#537647">UNTUK DEVELOPER</text>
+    <text x="54" y="277" font-size="65" font-weight="700">Google Play</text><text x="54" y="350" font-size="65" font-weight="700">Console</text>
+    <text x="58" y="431" font-size="24">Siapkan akun dan identitas.</text><text x="58" y="467" font-size="24">Tinjau pembayaran pendaftaran.</text>
+    <text x="58" y="650" font-size="15" letter-spacing="2">PANDUAN GOISIINN</text><text x="1100" y="650" font-size="18">05</text>
+  </g>
+  <g transform="translate(746 105) rotate(9 113 222)"><rect x="9" y="14" width="232" height="449" rx="36" fill="#688a61" opacity=".3"/><rect width="232" height="449" rx="36" fill="#253a31"/>
+    <rect x="12" y="12" width="208" height="425" rx="27" fill="#fffdf7"/><path d="M76 18H158" stroke="#253a31" stroke-width="14" stroke-linecap="round"/>
+    <rect x="35" y="81" width="162" height="148" rx="24" fill="#e1edce"/><path d="m98 118 57 37-57 37Z" fill="#7da260"/>
+    <path d="M37 268H190M37 297H170M37 326H179" stroke="#c6d8bc" stroke-width="8" stroke-linecap="round"/><rect x="35" y="365" width="162" height="39" rx="12" fill="#253a31"/><path d="m104 384 9 8 16-18" stroke="#fff" fill="none" stroke-width="4"/>
+  </g>
+  <g transform="translate(956 354) rotate(-7 95 87)"><rect width="184" height="169" rx="18" fill="#f97316"/><g stroke="#fff" fill="none" stroke-width="5" stroke-linecap="round"><path d="m23 42 7 7 13-15M61 42H153M23 83l7 7 13-15M61 83H153M23 124l7 7 13-15M61 124H125"/></g></g>
+  <g transform="translate(1076 143)" fill="#54784a"><path d="M-35 22a35 35 0 0 1 70 0Z"/><path d="m-24-14-9-15m57 15 9-15" stroke="#54784a" stroke-width="4" stroke-linecap="round"/><circle cx="-14" cy="9" r="3" fill="#eef3e9"/><circle cx="14" cy="9" r="3" fill="#eef3e9"/></g>
+</svg>

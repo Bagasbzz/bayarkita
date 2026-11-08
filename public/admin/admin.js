@@ -1,4 +1,4 @@
-/* Admin dashboard BayarKita — SPA tanpa dependensi, bicara ke /api/admin (Cloudflare Pages Functions) */
+/* Admin dashboard Goisiinn — SPA tanpa dependensi, bicara ke /api/admin (Cloudflare Pages Functions) */
 (function () {
   "use strict";
 
@@ -110,16 +110,16 @@
   };
   var notify = function (title, body) {
     if (!("Notification" in window) || document.hasFocus()) return;
-    if (Notification.permission === "granted") { try { new Notification(title, { body: body, icon: "../assets/logo-bayarkita.svg" }); } catch (e) { /* abaikan */ } }
+    if (Notification.permission === "granted") { try { new Notification(title, { body: body, icon: "../assets/logo-goisiinn.svg" }); } catch (e) { /* abaikan */ } }
   };
   var requestNotif = function () { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); };
 
   // ---------- Login ----------
-  var state = { admin: null, view: "", settings: {}, services: [], conv: { list: [], filter: "all", q: "", active: null, lastId: 0, orders: [], timer: null, listTimer: null, rendered: {}, lastDay: "" }, orders: { page: 1, status: "", q: "" }, totalUnread: 0, newOrders: 0 };
+  var state = { admin: null, view: "", settings: {}, services: [], conv: { list: [], filter: "all", q: "", active: null, locale: "id", lastId: 0, orders: [], timer: null, listTimer: null, rendered: {}, lastDay: "" }, orders: { page: 1, status: "", q: "" }, totalUnread: 0, newOrders: 0 };
   var showLogin = function () {
     stopAllPolling();
     $("app").hidden = true; $("login").hidden = false;
-    document.title = "Masuk Admin - BayarKita";
+    document.title = "Masuk Admin - Goisiinn";
     setTimeout(function () { var i = qs('input[name=username]', $("login-form")); if (i) i.focus(); }, 30);
   };
   var showApp = function (admin) {
@@ -155,7 +155,7 @@
     qsa(".admin-view").forEach(function (v) { v.hidden = v.dataset.view !== view; });
     qsa(".admin-nav a").forEach(function (a) { a.classList.toggle("is-active", a.dataset.view === view); });
     $("view-title").textContent = TITLES[view];
-    document.title = TITLES[view] + " - Admin BayarKita";
+    document.title = TITLES[view] + " - Admin Goisiinn";
     toggleSidebar(false);
     stopThreadPolling(); clearInterval(state.conv.listTimer); state.conv.listTimer = null;
     if (view === "dashboard") loadDashboard();
@@ -282,7 +282,9 @@
     api("messages", undefined, { query: { id: id, since: initial ? 0 : state.conv.lastId } }).then(function (j) {
       if (state.conv.active !== id) return;
       var c = j.conversation;
-      $("thread-name").textContent = c.name;
+      var localeChanged = state.conv.locale !== (c.locale || "id");
+      state.conv.locale = c.locale || "id";
+      $("thread-name").textContent = c.name + (c.account_type === "seller" ? " · Seller" : "");
       var ph = $("thread-phone"); ph.textContent = c.phone; ph.href = waLink(c.phone);
       $("thread-avatar").textContent = initials(c.name); $("thread-avatar").className = "admin-avatar" + (c.status === "closed" ? " is-closed" : "");
       $("thread-toggle-status").textContent = c.status === "closed" ? "Buka kembali" : "Tandai selesai";
@@ -292,6 +294,7 @@
       aiBtn.classList.toggle("is-active", Number(c.ai_enabled) === 1);
       state.conv.orders = j.orders; $("thread-order-count").textContent = j.orders.length;
       renderThreadOrders();
+      if (localeChanged) renderQuickReplies();
       if (initial) threadMsgs.innerHTML = "";
       var atBottom = threadMsgs.scrollHeight - threadMsgs.scrollTop - threadMsgs.clientHeight < 80;
       var gotCustomer = false;
@@ -304,9 +307,10 @@
   var orderCard = function (o) {
     return '<div class="webchat-order"><div class="webchat-order-head">' + ICON.bag + "<span>Pesanan #" + esc(o.code) + '</span><small><span class="webchat-pill is-' + esc(o.status) + '">' + (STATUS[o.status] || o.status) + "</span></small></div>" +
       '<div class="webchat-order-rows"><div><span>Layanan</span><b>' + esc(o.service_name) + (o.plan ? " \u00b7 " + esc(o.plan) : "") + "</b></div>" +
+      (Number(o.quantity || 1) > 1 ? "<div><span>Jumlah produk</span><b>" + esc(o.quantity) + "</b></div>" : "") +
       "<div><span>Harga</span><b>" + fmtAmount(o.amount, o.currency) + (o.currency !== "IDR" ? " \u2248 " + fmtRp(o.amount_idr) : "") + "</b></div>" +
       "<div><span>Biaya fee</span><b>" + fmtRp(o.fee) + "</b></div>" +
-      (o.discount > 0 ? "<div><span>Diskon</span><b>-" + fmtRp(o.discount) + "</b></div>" : "") +
+      (o.discount > 0 ? "<div><span>Diskon</span><b>-" + fmtRp(o.discount) + (Number(o.seller_discount) > 0 ? " (Seller 8%)" : "") + "</b></div>" : "") +
       '<div class="is-total"><span>Total</span><b>' + fmtRp(o.total) + "</b></div></div></div>";
   };
   var appendMsg = function (m) {
@@ -315,7 +319,7 @@
     var isOrder = m.meta && m.meta.type === "order";
     var el = document.createElement("div");
     el.className = "webchat-msg is-" + m.sender + (isOrder ? " has-order" : "");
-    var who = m.sender === "admin" ? ((m.meta && m.meta.agent) ? m.meta.agent + " (AI) \u00b7 " : "Anda \u00b7 ") : m.sender === "system" ? "Sistem \u00b7 " : "";
+    var who = m.sender === "admin" ? ((m.meta && m.meta.agent) ? m.meta.agent + " \u00b7 " : "Anda \u00b7 ") : m.sender === "system" ? "Sistem \u00b7 " : "";
     el.innerHTML = (isOrder ? orderCard(m.meta) : '<div class="webchat-bubble">' + esc(m.body) + "</div>") + '<span class="webchat-time">' + esc(who) + fmtTime(m.created_at) + "</span>";
     threadMsgs.appendChild(el);
   };
@@ -368,6 +372,16 @@
     var raw = state.settings.quick_replies;
     var render = function (txt) {
       var lines = String(txt || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+      if (state.conv.locale === "ms") {
+        var msReplies = {
+          "Halo, terima kasih sudah menghubungi Goisiinn. Ada yang bisa kami bantu?": "Hai, terima kasih kerana menghubungi Goisiinn. Ada yang boleh kami bantu?",
+          "Pesanan Anda sedang kami proses, mohon tunggu sebentar ya.": "Pesanan anda sedang kami proses. Sila tunggu sebentar ya.",
+          "Silakan transfer ke rekening berikut lalu kirim bukti transfernya di sini.": "Sila pindahkan bayaran ke akaun berikut, kemudian hantar bukti pembayaran di sini.",
+          "Pembayaran sudah kami terima, pesanan akan segera diproses.": "Pembayaran telah kami terima. Pesanan akan diproses dengan segera.",
+          "Pesanan Anda sudah selesai. Terima kasih sudah menggunakan jasa Goisiinn!": "Pesanan anda telah selesai. Terima kasih kerana menggunakan perkhidmatan Goisiinn!"
+        };
+        lines = lines.map(function (line) { return msReplies[line] || line; });
+      }
       $("quick-replies").innerHTML = lines.map(function (l) { return '<button type="button" title="' + esc(l) + '">' + esc(l.length > 48 ? l.slice(0, 48) + "…" : l) + "</button>"; }).join("");
       qsa("button", $("quick-replies")).forEach(function (b, i) { b.onclick = function () { composeTa.value = lines[i]; autosize(); composeTa.focus(); }; });
     };
@@ -432,7 +446,8 @@
     if (confirmPayment) confirmPayment.onclick = function () {
       confirmModal("Konfirmasi pembayaran?", "Pastikan dana " + fmtRp(o.total) + " untuk invoice " + o.code + " benar-benar sudah masuk ke rekening Anda. Membuka WhatsApp atau mengirim bukti bukan konfirmasi penerimaan dana.", "Ya, dana sudah masuk", false).then(function (confirmed) {
         if (!confirmed) return;
-        api("order_status", { id: o.id, status: "dibayar", message: "Pembayaran sudah kami terima. Pesanan akan segera diproses." }).then(function () {
+        var paidMessage = o.locale === "ms" ? "Pembayaran telah kami terima. Pesanan akan diproses dengan segera." : "Pembayaran sudah kami terima. Pesanan akan segera diproses.";
+        api("order_status", { id: o.id, status: "dibayar", message: paidMessage }).then(function () {
           toast("Pembayaran dikonfirmasi.", "success"); loadOrders(); pollBadges();
         }).catch(function (ex) { toast(ex.message, "error"); });
       });
@@ -442,13 +457,23 @@
   var changeOrderStatus = function (sel, done) {
     var id = parseInt(sel.dataset.order, 10), status = sel.value, prev = sel.dataset.current;
     if (status === prev) return;
-    var defaults = {
+    var order = (state.conv.orders || []).concat(state.orders.data || []).filter(function (o) { return Number(o.id) === id; })[0];
+    var isMs = (order && order.locale === "ms") || (!order && state.conv.locale === "ms");
+    var defaultsId = {
       dibayar: "Pembayaran sudah kami terima. Pesanan akan segera diproses.",
       diproses: "Pesanan Anda sedang kami proses. Mohon tunggu konfirmasi berikutnya ya.",
-      selesai: "Pesanan Anda telah selesai diproses. Terima kasih sudah menggunakan jasa BayarKita!",
+      selesai: "Pesanan Anda telah selesai diproses. Terima kasih sudah menggunakan jasa Goisiinn!",
       batal: "Mohon maaf, pesanan Anda dibatalkan. Silakan hubungi admin jika ada pertanyaan.",
       baru: ""
     };
+    var defaultsMs = {
+      dibayar: "Pembayaran telah kami terima. Pesanan akan diproses dengan segera.",
+      diproses: "Pesanan anda sedang kami proses. Sila tunggu pengesahan seterusnya ya.",
+      selesai: "Pesanan anda telah selesai diproses. Terima kasih kerana menggunakan perkhidmatan Goisiinn!",
+      batal: "Maaf, pesanan anda telah dibatalkan. Sila hubungi admin jika ada pertanyaan.",
+      baru: ""
+    };
+    var defaults = isMs ? defaultsMs : defaultsId;
     openModal("<h2>Ubah status: " + STATUS[status] + '</h2><p class="admin-hint">Status baru akan muncul di invoice dan chat pelanggan. Untuk Dibayar, Diproses, atau Selesai, pastikan dana benar-benar sudah masuk terlebih dahulu.</p><form id="status-form"><label>Pesan untuk pelanggan<textarea name="message" rows="3">' + esc(defaults[status] || "") + '</textarea></label><div class="admin-modal-actions"><button class="admin-btn admin-btn-ghost" type="button" data-act="cancel">Batal</button><button class="admin-btn admin-btn-primary" type="submit">Simpan status</button></div></form>');
     qs("[data-act=cancel]", modalBody).onclick = function () { sel.value = prev; closeModal(); };
     qs("#status-form", modalBody).addEventListener("submit", function (e) {

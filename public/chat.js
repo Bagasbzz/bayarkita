@@ -12,6 +12,9 @@
   var BASE = "/"; // root aset statis (logo, dll.)
   var STORAGE_KEY = "fdv_chat";
   var POLL_MS = 3000;
+  var localeApi = window.GoisiinnLocale;
+  var locale = function () { return localeApi ? localeApi.get() : "id"; };
+  var t = function (key) { return localeApi ? localeApi.t(key) : key; };
 
   var ICON = {
     chat: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/></svg>',
@@ -24,9 +27,9 @@
     arrow: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>'
   };
 
-  var session = null; // {token, name, phone}
+  var session = null; // {token, name, phone, account_type, locale}
   try { session = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch (e) { session = null; }
-  var saveSession = function (s) { session = s; try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch (e) {} };
+  var saveSession = function (s) { session = Object.assign({}, session || {}, s || {}); try { localStorage.setItem(STORAGE_KEY, JSON.stringify(session)); } catch (e) {} };
   var clearSession = function () { session = null; try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} };
 
   var api = function (path, data) {
@@ -59,11 +62,11 @@
   panel.className = "webchat";
   panel.hidden = true;
   panel.setAttribute("role", "dialog");
-  panel.setAttribute("aria-label", "Live chat BayarKita");
+  panel.setAttribute("aria-label", "Live chat Goisiinn");
   panel.innerHTML =
     '<header class="webchat-head">' +
-    '<span class="webchat-avatar"><img src="' + BASE + 'assets/logo-bayarkita.svg" alt=""><span class="webchat-status-dot"></span></span>' +
-    '<div class="webchat-title"><strong>Live Chat</strong><span class="webchat-subtitle">Biasanya membalas dalam beberapa menit</span></div>' +
+    '<span class="webchat-avatar"><img src="' + BASE + 'assets/logo-goisiinn.svg" alt=""><span class="webchat-status-dot"></span></span>' +
+    '<div class="webchat-title"><strong>' + t("live_chat") + '</strong><span class="webchat-subtitle">' + t("chat_subtitle") + '</span><button type="button" class="webchat-seller"></button></div>' +
     '<div class="webchat-head-actions"><button type="button" class="webchat-min" aria-label="Kecilkan">' + ICON.minus + '</button><button type="button" class="webchat-close" aria-label="Tutup chat">' + ICON.x + "</button></div>" +
     "</header>" +
     '<div class="webchat-body"></div>';
@@ -72,6 +75,7 @@
   var statusDot = panel.querySelector(".webchat-status-dot");
   var subtitle = panel.querySelector(".webchat-subtitle");
   var titleEl = panel.querySelector(".webchat-title strong");
+  var sellerBtn = panel.querySelector(".webchat-seller");
   var minimized = false;
 
   var lastId = 0, lastVisible = "", unread = 0, pollTimer = null, rendered = {}, lastDay = "", pendingMessage = "";
@@ -79,7 +83,12 @@
   var agentName = "", queueTimer = null;
   var setAgent = function (name) {
     agentName = name || "";
-    titleEl.textContent = agentName ? agentName : "Live Chat";
+    titleEl.textContent = agentName ? agentName : t("live_chat");
+  };
+  var updateSellerButton = function () {
+    var seller = session && session.account_type === "seller";
+    sellerBtn.textContent = seller ? t("seller_active") : t("upgrade_seller");
+    sellerBtn.classList.toggle("is-active", !!seller);
   };
 
   var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
@@ -90,14 +99,14 @@
     return sym + Number(n).toLocaleString("en-US", { minimumFractionDigits: Number.isInteger(Number(n)) ? 0 : 2, maximumFractionDigits: 2 });
   };
   var parseDate = function (s) { return new Date(String(s).replace(" ", "T")); };
-  var fmtTime = function (s) { var d = parseDate(s); return isNaN(d) ? "" : d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }); };
+  var fmtTime = function (s) { var d = parseDate(s); return isNaN(d) ? "" : d.toLocaleTimeString(locale() === "ms" ? "ms-MY" : "id-ID", { hour: "2-digit", minute: "2-digit" }); };
   var dayLabel = function (s) {
     var d = parseDate(s); if (isNaN(d)) return "";
     var today = new Date(); today.setHours(0, 0, 0, 0);
     var diff = Math.round((today - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
-    if (diff === 0) return "Hari ini";
-    if (diff === 1) return "Kemarin";
-    return d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+    if (diff === 0) return t("today");
+    if (diff === 1) return t("yesterday");
+    return d.toLocaleDateString(locale() === "ms" ? "ms-MY" : "id-ID", { day: "numeric", month: "long", year: "numeric" });
   };
 
   var STATUS_LABEL = { baru: "Menunggu Pembayaran", dibayar: "Dibayar", diproses: "Diproses", selesai: "Selesai", batal: "Dibatalkan" };
@@ -105,13 +114,16 @@
     var o = m.meta;
     // Link invoice hanya dari server dengan format /inv/{kode}.
     var inv = /^\/inv\/FDV-[\w-]+$/.test(o.invoice_url || "") ? o.invoice_url : "";
-    return '<div class="webchat-order"><div class="webchat-order-head">' + ICON.bag + "<span>Pesanan #" + esc(o.code) + '</span><small><span class="webchat-pill is-' + esc(o.status) + '">' + (STATUS_LABEL[o.status] || esc(o.status)) + "</span></small></div>" +
-      '<div class="webchat-order-rows"><div><span>Layanan</span><b>' + esc(o.service_name) + (o.plan ? " \u00b7 " + esc(o.plan) : "") + "</b></div>" +
-      "<div><span>Harga</span><b>" + fmtAmount(o.amount, o.currency) + (o.currency !== "IDR" ? " \u2248 " + fmtRp(o.amount_idr) : "") + "</b></div>" +
-      "<div><span>Biaya fee</span><b>" + fmtRp(o.fee) + "</b></div>" +
-      (o.discount > 0 ? "<div><span>Diskon</span><b>-" + fmtRp(o.discount) + "</b></div>" : "") +
-      '<div class="is-total"><span>Total</span><b>' + fmtRp(o.total) + "</b></div>" +
-       (inv ? '<a class="webchat-order-link" href="' + esc(inv) + '">Lihat invoice &amp; bayar</a>' : "") + "</div></div>";
+    var regularDiscount = Math.max(0, Number(o.discount || 0) - Number(o.seller_discount || 0));
+    return '<div class="webchat-order"><div class="webchat-order-head">' + ICON.bag + "<span>" + t("order") + " #" + esc(o.code) + '</span><small><span class="webchat-pill is-' + esc(o.status) + '">' + (STATUS_LABEL[o.status] || esc(o.status)) + "</span></small></div>" +
+      '<div class="webchat-order-rows"><div><span>' + t("service") + '</span><b>' + esc(o.service_name) + (o.plan ? " \u00b7 " + esc(o.plan) : "") + "</b></div>" +
+      (Number(o.quantity || 1) > 1 ? "<div><span>" + t("quantity") + "</span><b>" + esc(o.quantity) + "</b></div>" : "") +
+      "<div><span>" + t("price") + "</span><b>" + fmtAmount(o.amount, o.currency) + (o.currency !== "IDR" ? " \u2248 " + fmtRp(o.amount_idr) : "") + "</b></div>" +
+      "<div><span>" + t("fee") + "</span><b>" + fmtRp(o.fee) + "</b></div>" +
+      (regularDiscount > 0 ? "<div><span>" + t("discount") + "</span><b>-" + fmtRp(regularDiscount) + "</b></div>" : "") +
+      (Number(o.seller_discount) > 0 ? "<div><span>" + t("seller_discount") + "</span><b>-" + fmtRp(o.seller_discount) + "</b></div>" : "") +
+      '<div class="is-total"><span>' + t("total") + "</span><b>" + fmtRp(o.total) + "</b></div>" +
+       (inv ? '<a class="webchat-order-link" href="' + esc(inv) + '">' + t("view_invoice") + "</a>" : "") + "</div></div>";
   };
 
   var renderMessage = function (m) {
@@ -150,25 +162,26 @@
   // ---------- Tampilan: form identitas ----------
   var renderIntro = function (prefill) {
     stopPolling(); stopQueue(); setAgent("");
+    updateSellerButton();
     body.innerHTML =
-      '<div class="webchat-intro"><div><h3>Live Chat</h3><p>Isi nama dan nomor WhatsApp Anda agar tim kami dapat menghubungi kembali jika chat terputus.</p></div>' +
+      '<div class="webchat-intro"><div><h3>' + t("live_chat") + '</h3><p>' + t("intro") + '</p></div>' +
       '<form class="webchat-form" novalidate>' +
-      '<label>Nama<span class="checkout-input-wrap">' + ICON.user + '<input name="name" autocomplete="name" placeholder="Masukkan nama Anda" value="' + esc((prefill && prefill.name) || "") + '"></span></label>' +
-      '<label>No WhatsApp<span class="checkout-input-wrap">' + ICON.phone + '<input name="phone" autocomplete="tel" inputmode="tel" placeholder="Contoh: 0812 3456 7890" value="' + esc((prefill && prefill.phone) || "") + '"></span></label>' +
-      '<button class="webchat-submit" type="submit"><span>Mulai Chat</span>' + ICON.arrow + "</button></form>" +
-      '<p class="webchat-alt">Atau hubungi via <a href="https://t.me/bayarkitaofficial" target="_blank" rel="noreferrer">Telegram</a></p></div>';
+      '<label>' + t("name") + '<span class="checkout-input-wrap">' + ICON.user + '<input name="name" autocomplete="name" placeholder="' + t("name_placeholder") + '" value="' + esc((prefill && prefill.name) || "") + '"></span></label>' +
+      '<label>' + t("whatsapp") + '<span class="checkout-input-wrap">' + ICON.phone + '<input name="phone" autocomplete="tel" inputmode="tel" placeholder="' + t("phone_placeholder") + '" value="' + esc((prefill && prefill.phone) || "") + '"></span></label>' +
+      '<button class="webchat-submit" type="submit"><span>' + t("start_chat") + '</span>' + ICON.arrow + "</button></form>" +
+      '<p class="webchat-alt">Atau hubungi via <a href="https://wa.me/62895631223200" target="_blank" rel="noreferrer">WhatsApp</a></p></div>';
     var form = body.querySelector("form");
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       var name = form.name.value.trim(), phone = form.phone.value.trim();
       var old = form.querySelector(".checkout-error"); if (old) old.remove();
       var showErr = function (t) { var p = document.createElement("p"); p.className = "checkout-error"; p.textContent = t; form.insertBefore(p, form.querySelector(".webchat-submit")); };
-      if (name.length < 2 || phone.replace(/\D/g, "").length < 9) return showErr("Nama dan nomor WhatsApp wajib diisi dengan benar.");
+      if (name.length < 2 || phone.replace(/\D/g, "").length < 9) return showErr(t("invalid_identity"));
       var btn = form.querySelector(".webchat-submit"); btn.disabled = true;
-      api("chat?action=start", { name: name, phone: phone }).then(function (r) {
+      api("chat?action=start", { name: name, phone: phone, locale: locale() }).then(function (r) {
         btn.disabled = false;
-        if (!r.ok) return showErr(r.error || "Gagal memulai chat.");
-        saveSession({ token: r.token, name: r.name, phone: r.phone });
+        if (!r.ok) return showErr(r.error || t("start_failed"));
+        saveSession({ token: r.token, name: r.name, phone: r.phone, locale: r.locale || locale(), account_type: r.account_type || "customer" });
         if (r.queue_left > 0) renderQueue(r.queue_left); else renderChat();
       });
     });
@@ -182,11 +195,11 @@
     var left = Math.max(1, Math.round(seconds));
     body.innerHTML =
       '<div class="webchat-queue"><div class="webchat-queue-spinner"></div>' +
-      '<h3>Menghubungkan ke tim kami\u2026</h3>' +
-      '<p>Mohon tunggu sebentar, Anda akan segera terhubung dengan agen kami.</p>' +
-      '<div class="webchat-queue-count">Perkiraan <b>' + left + '</b> detik</div></div>';
+      '<h3>' + t("queue_title") + '</h3>' +
+      '<p>' + t("queue_text") + '</p>' +
+      '<div class="webchat-queue-count">' + t("estimate") + ' <b>' + left + '</b> ' + t("seconds") + '</div></div>';
     var countEl = body.querySelector(".webchat-queue-count b");
-    subtitle.textContent = "Menunggu agen tersedia";
+    subtitle.textContent = t("waiting");
     queueTimer = setInterval(function () {
       left -= 1;
       if (countEl) countEl.textContent = String(Math.max(0, left));
@@ -205,13 +218,14 @@
   // ---------- Tampilan: percakapan ----------
   var renderChat = function () {
     stopQueue();
+    updateSellerButton();
     body.innerHTML =
       '<div class="webchat-messages" aria-live="polite"></div>' +
-      '<div class="webchat-typing" hidden><b>Admin</b> sedang mengetik<span class="webchat-dots"><i></i><i></i><i></i></span></div>' +
-      '<div class="webchat-offline" hidden><span>Admin sedang offline. Pesan Anda tetap tersimpan.</span></div>' +
-      '<div class="webchat-footer"><form class="webchat-compose"><textarea rows="1" placeholder="Tulis pesan..." aria-label="Tulis pesan"></textarea>' +
-      '<button class="webchat-send" type="submit" aria-label="Kirim" disabled>' + ICON.send + "</button></form>" +
-      '<p class="webchat-note">Chat sebagai <b></b> \u00b7 <a href="#" class="webchat-reset">ganti</a></p></div>';
+      '<div class="webchat-typing" hidden><b>Admin</b> ' + t("typing") + '<span class="webchat-dots"><i></i><i></i><i></i></span></div>' +
+      '<div class="webchat-offline" hidden><span>' + t("offline") + '</span></div>' +
+      '<div class="webchat-footer"><form class="webchat-compose"><textarea rows="1" placeholder="' + t("message_placeholder") + '" aria-label="' + t("message_placeholder") + '"></textarea>' +
+      '<button class="webchat-send" type="submit" aria-label="' + t("send") + '" disabled>' + ICON.send + "</button></form>" +
+      '<p class="webchat-note">' + t("chat_as") + ' <b></b> \u00b7 <a href="#" class="webchat-reset">' + t("change") + '</a></p></div>';
     messagesEl = body.querySelector(".webchat-messages");
     typingEl = body.querySelector(".webchat-typing");
     textarea = body.querySelector("textarea");
@@ -231,7 +245,7 @@
       var tempId = "tmp" + Date.now();
       renderMessage({ id: tempId, sender: "customer", body: text, created_at: localNow() });
       scrollBottom();
-      api("chat?action=send", { token: session.token, body: text }).then(function (r) {
+       api("chat?action=send", { token: session.token, body: text, locale: locale() }).then(function (r) {
         if (!r.ok) {
           if (/tidak ditemukan/i.test(r.error || "")) { clearSession(); renderIntro(); return; }
           var el = messagesEl.lastElementChild; if (el) el.querySelector(".webchat-time").textContent = "Gagal terkirim: " + (r.error || "");
@@ -252,6 +266,31 @@
     }
     if (!panel.hidden) textarea.focus();
   };
+
+  var renderSellerUpgrade = function () {
+    if (!session) return renderIntro();
+    stopPolling(); stopQueue(); updateSellerButton();
+    var active = session.account_type === "seller";
+    body.innerHTML = '<div class="webchat-seller-card"><span class="webchat-seller-mark">-8%</span><h3>' + t("seller_title") + '</h3><p>' + t("seller_copy") + '</p>' +
+      (active ? '<div class="webchat-seller-active">✓ ' + t("seller_active") + '</div>' : '<button type="button" class="webchat-seller-activate">' + t("activate_seller") + '</button>') +
+      '<button type="button" class="webchat-seller-back">' + t("back") + '</button><p class="checkout-error" hidden></p></div>';
+    var back = body.querySelector(".webchat-seller-back");
+    back.addEventListener("click", renderChat);
+    var activate = body.querySelector(".webchat-seller-activate");
+    if (activate) activate.addEventListener("click", function () {
+      activate.disabled = true;
+      api("account", { token: session.token, locale: locale() }).then(function (r) {
+        if (!r.ok) throw new Error(r.error || t("seller_failed"));
+        saveSession({ account_type: "seller", locale: r.locale || locale() });
+        updateSellerButton();
+        renderChat();
+      }).catch(function (error) {
+        activate.disabled = false;
+        var msg = body.querySelector(".checkout-error");
+        msg.textContent = error.message || t("seller_failed"); msg.hidden = false;
+      });
+    });
+  };
   var localNow = function () { var d = new Date(), p = function (n) { return (n < 10 ? "0" : "") + n; }; return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds()); };
 
   var poll = function (initial) {
@@ -259,6 +298,10 @@
     return api("chat?action=poll&token=" + encodeURIComponent(session.token) + "&since=" + lastId + "&vsince=" + encodeURIComponent(lastVisible)).then(function (r) {
       if (!r.ok) { if (r.error && /tidak ditemukan/i.test(r.error)) { clearSession(); renderIntro(); } return; }
       if (r.agent) setAgent(r.agent);
+      if (r.account_type && (!session.account_type || session.account_type !== r.account_type || session.locale !== r.locale)) {
+        saveSession({ account_type: r.account_type, locale: r.locale || session.locale || locale() });
+        updateSellerButton();
+      }
       // Masih di antrian (misal buka ulang halaman saat menunggu).
       if (r.connected === false && r.queue_left > 0) { if (!panel.hidden && !body.querySelector(".webchat-queue")) renderQueue(r.queue_left); return; }
       if (!messagesEl) return;
@@ -274,7 +317,7 @@
       showTyping(!!r.typing);
       if (gotNew && (initial || atBottom)) scrollBottom();
       statusDot.classList.toggle("is-online", !!r.admin_online);
-      subtitle.textContent = r.admin_online ? "Online \u00b7 siap membantu" : "Biasanya membalas dalam beberapa menit";
+      subtitle.textContent = r.admin_online ? t("online") : t("chat_subtitle");
       var off = body.querySelector(".webchat-offline"); if (off) off.hidden = !!r.admin_online;
       unread = r.unread || 0;
       if (!panel.hidden && !minimized && document.visibilityState === "visible") {
@@ -300,7 +343,7 @@
   var notify = function (msgs) {
     if (!("Notification" in window) || Notification.permission !== "granted" || document.visibilityState === "visible") return;
     var last = msgs.filter(function (m) { return m.sender !== "customer"; }).pop();
-    if (last) try { new Notification(agentName ? agentName + " \u00b7 BayarKita" : "Live Chat BayarKita", { body: last.body.slice(0, 120) }); } catch (e) {}
+    if (last) try { new Notification(agentName ? agentName + " \u00b7 Goisiinn" : "Live Chat Goisiinn", { body: last.body.slice(0, 120) }); } catch (e) {}
   };
 
   // ---------- Buka / tutup ----------
@@ -326,12 +369,19 @@
   };
   panel.querySelector(".webchat-close").addEventListener("click", close);
   panel.querySelector(".webchat-min").addEventListener("click", function () { minimized = true; close(); });
+  sellerBtn.addEventListener("click", function () { if (session) renderSellerUpgrade(); else renderIntro(); });
   action.addEventListener("click", function (e) { e.stopPropagation(); open(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !panel.hidden) close(); });
 
   // Polling latar belakang (badge) jika sudah pernah chat, meski panel tertutup.
+  updateSellerButton();
   if (session) { poll(true); startPolling(); }
   document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible" && session) poll(false); });
+  document.addEventListener("goisiinn:locale", function () {
+    if (session) saveSession({ locale: locale() });
+    setAgent(agentName); updateSellerButton();
+    if (!panel.hidden) { messagesEl = null; if (session) renderChat(); else renderIntro(); }
+  });
 
   // ---------- API publik untuk checkout (script.js) ----------
   window.FdvChat = {

@@ -1,4 +1,4 @@
-/* Admin dashboard BayarKita — memakai token desain situs (styles.css) */
+/* Admin dashboard Goisiinn — memakai token desain situs (styles.css) */
 :root{--admin-bg:#f4f6fa;--admin-sidebar:250px;--admin-radius:16px;--admin-shadow:0 10px 30px #0f172a0d}
 body.admin-body{background:var(--admin-bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 body.admin-body [hidden]{display:none!important}

@@ -6,13 +6,15 @@
  *      mengembalikan redirectUrl ke halaman invoice /inv/{kode}.
  */
 import {
-  ok, fail, param, strParam, now, fmtLocal, normalizePhone, settingsAll, calcOrder, fmtRp, fmtAmount, parseJsonArr,
+  ok, fail, param, strParam, now, fmtLocal, normalizePhone, supportedPhone, settingsAll, calcOrder, fmtRp, fmtAmount, parseJsonArr,
   conversationByToken, createConversation, addMessage,
 } from '../_lib/core.js';
 import { randomHex } from '../_lib/password.js';
 import { pickAgent, scheduleAiReply } from '../_lib/ai.js';
 import { invoiceExpiry } from '../_lib/payment.js';
 import { getSeatProduct, getPoProduct, discountIdr, isPremiumPlan } from '../_lib/seat-products.js';
+import { normalizeLocale, tr } from '../_lib/i18n.js';
+import { sellerDiscount, SELLER_DISCOUNT_PCT, SELLER_MIN_QUANTITY, MAX_ORDER_QUANTITY } from '../_lib/seller.js';
 
 export async function onRequest(context) {
   const { data, env } = context;
@@ -21,7 +23,10 @@ export async function onRequest(context) {
   if (ctx.request.method !== 'POST') fail('Metode tidak diizinkan.', 405);
 
   const name = strParam(ctx, 'name', 120);
-  const phone = normalizePhone(strParam(ctx, 'phone', 40));
+  const token = strParam(ctx, 'token', 64);
+  let conv = await conversationByToken(db, token);
+  const locale = normalizeLocale(strParam(ctx, 'locale', 5) || conv?.locale || ctx.locale);
+  const phone = normalizePhone(strParam(ctx, 'phone', 40), locale);
   const serviceSlug = strParam(ctx, 'service_slug', 80);
   const serviceName = strParam(ctx, 'service_name', 160);
   let plan = strParam(ctx, 'plan', 120);
@@ -30,13 +35,14 @@ export async function onRequest(context) {
   const customerEmail = strParam(ctx, 'customer_email', 254).toLowerCase();
   const currency = strParam(ctx, 'currency', 5).toUpperCase();
   const amount = Number(param(ctx, 'amount', 0)) || 0;
-  const token = strParam(ctx, 'token', 64);
+  const quantity = Math.trunc(Number(param(ctx, 'quantity', 1)) || 1);
 
   if (name.length < 2) fail('Nama wajib diisi.');
-  if (phone.length < 9 || phone.length > 15) fail('Nomor WhatsApp tidak valid.');
+  if (!supportedPhone(phone)) fail(tr(locale, 'invalid_phone'));
   if (!serviceName) fail('Layanan tidak valid.');
   if (!/^[A-Z]{3}$/.test(currency)) fail('Mata uang tidak valid.');
   if (!Number.isFinite(amount) || amount <= 0) fail('Jumlah tidak valid.');
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_ORDER_QUANTITY) fail(`Jumlah produk harus 1-${MAX_ORDER_QUANTITY}.`);
 
   const s = await settingsAll(db);
   const seatProduct = getSeatProduct(productKey);
@@ -44,6 +50,7 @@ export async function onRequest(context) {
   if (productKey && !seatProduct) fail('Paket seat tidak valid.');
   if (poKey && !poProduct) fail('Paket patungan tidak valid.');
   if (seatProduct && poProduct) fail('Pilih satu jenis produk.');
+  if (poProduct && quantity !== 1) fail(locale === 'ms' ? 'Produk kongsi hanya boleh dipesan satu slot bagi setiap checkout.' : 'Produk patungan hanya dapat dipesan satu slot per checkout.');
   const fixedProduct = seatProduct || poProduct;
   if (fixedProduct) {
     if (serviceSlug !== fixedProduct.service_slug || serviceName !== fixedProduct.service_name || plan !== fixedProduct.plan) fail('Detail paket tidak sesuai.');
@@ -58,7 +65,7 @@ export async function onRequest(context) {
   const calc = calcOrder(s, amount, currency);
   const emailProduct = seatProduct || poProduct;
   const orderRate = seatProduct || poProduct ? 1 : calc.rate;
-  const orderAmountIdr = seatProduct ? seatProduct.amount : poProduct ? (poProduct.currency === 'IDR' ? poProduct.amount : calc.amount_idr) : calc.amount_idr;
+  const unitAmountIdr = seatProduct ? seatProduct.amount : poProduct ? (poProduct.currency === 'IDR' ? poProduct.amount : calc.amount_idr) : calc.amount_idr;
   // Paket tetap = seat, patungan, atau preset non-Custom yang cocok persis dengan
   // katalog layanan di database. Nilai dari browser tidak dipercaya.
   let isFixedPlan = !!fixedProduct;
@@ -68,22 +75,27 @@ export async function onRequest(context) {
   }
   // Paket mahal (> $20) ChatGPT/Claude: fee normal + diskon dolar.
   // Selain itu: fee dipotong fee_cut_pct (seat tetap Rp0, patungan tetap Rp5.000).
-  const premium = isFixedPlan && isPremiumPlan(serviceSlug, orderAmountIdr, s);
+  const premium = isFixedPlan && isPremiumPlan(serviceSlug, unitAmountIdr, s);
   const cutPct = Math.min(Math.max(Number(s.fee_cut_pct) || 0, 0), 100);
-  const orderFee = seatProduct ? 0 : poProduct ? 5000 : premium ? calc.fee : Math.round(calc.fee * (100 - cutPct) / 100);
-  const orderDiscount = premium ? Math.min(discountIdr(serviceSlug, s), Math.round(orderAmountIdr)) : 0;
-  const orderTotal = Math.round(orderAmountIdr + orderFee - orderDiscount);
-  const invoiceAmount = seatProduct || poProduct ? orderAmountIdr : amount;
+  const unitFee = seatProduct ? 0 : poProduct ? 5000 : premium ? calc.fee : Math.round(calc.fee * (100 - cutPct) / 100);
+  const unitDiscount = premium ? Math.min(discountIdr(serviceSlug, s), Math.round(unitAmountIdr)) : 0;
+  const unitTotal = Math.round(unitAmountIdr + unitFee - unitDiscount);
+  const sellerCut = sellerDiscount(conv?.account_type, quantity, unitTotal);
+  const orderAmountIdr = Math.round(unitAmountIdr * quantity * 100) / 100;
+  const orderFee = Math.round(unitFee * quantity);
+  const orderDiscount = Math.round(unitDiscount * quantity + sellerCut);
+  const orderTotal = Math.max(0, Math.round(unitTotal * quantity - sellerCut));
+  const invoiceUnitAmount = seatProduct || poProduct ? unitAmountIdr : amount;
+  const invoiceAmount = invoiceUnitAmount * quantity;
   const invoiceCurrency = seatProduct || poProduct ? 'IDR' : currency;
 
   // Pakai percakapan yang sudah ada di browser ini bila masih valid, kalau tidak buat baru.
   // Pelanggan yang datang dari checkout langsung tersambung ke agen (tanpa antrian).
   const ai = String(s.ai_enabled) === '1' && !!env.AI_API_KEY;
-  let conv = await conversationByToken(db, token);
   if (!conv) {
-    conv = await createConversation(db, s, name, phone, ai ? pickAgent() : null, ai ? now() : null);
+    conv = await createConversation(db, s, name, phone, ai ? pickAgent() : null, ai ? now() : null, locale);
   } else {
-    await db.prepare('UPDATE conversations SET name = ?, phone = ? WHERE id = ?').bind(name, phone, conv.id).run();
+    await db.prepare('UPDATE conversations SET name = ?, phone = ?, locale = ? WHERE id = ?').bind(name, phone, locale, conv.id).run();
   }
   const convId = Number(conv.id);
 
@@ -93,8 +105,8 @@ export async function onRequest(context) {
   const ts = now();
   const expiresAt = invoiceExpiry(s);
   const res = await db.prepare(
-    'INSERT INTO orders (code, conversation_id, service_slug, service_name, plan, amount, currency, rate, amount_idr, fee, total, status, customer_name, phone, created_at, updated_at, expires_at, customer_email, product_key, po_group_id, discount) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
-  ).bind(code, convId, serviceSlug, serviceName, plan, invoiceAmount, invoiceCurrency, orderRate, orderAmountIdr, orderFee, orderTotal, 'baru', name, phone, ts, ts, expiresAt, emailProduct ? customerEmail : null, seatProduct ? productKey : poProduct ? poKey : null, null, orderDiscount).run();
+    'INSERT INTO orders (code, conversation_id, service_slug, service_name, plan, amount, currency, rate, amount_idr, fee, total, status, customer_name, phone, created_at, updated_at, expires_at, customer_email, product_key, po_group_id, discount, quantity, unit_amount, unit_amount_idr, seller_discount, locale) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+  ).bind(code, convId, serviceSlug, serviceName, plan, invoiceAmount, invoiceCurrency, orderRate, orderAmountIdr, orderFee, orderTotal, 'baru', name, phone, ts, ts, expiresAt, emailProduct ? customerEmail : null, seatProduct ? productKey : poProduct ? poKey : null, null, orderDiscount, quantity, invoiceUnitAmount, unitAmountIdr, sellerCut, locale).run();
   const orderId = Number(res.meta.last_row_id);
   let poGroup = null;
   if (poProduct) {
@@ -118,23 +130,22 @@ export async function onRequest(context) {
   }
   const redirectUrl = `/inv/${code}`;
 
-  const summary = `Pesanan baru #${code}\n` +
-    `Layanan: ${serviceName}${plan ? ` - ${plan}` : ''}\n` +
-    `Harga: ${fmtAmount(invoiceAmount, invoiceCurrency)}${invoiceCurrency !== 'IDR' ? ' ≈ ' + fmtRp(orderAmountIdr) : ''}\n` +
-    `Biaya fee: ${fmtRp(orderFee)}\n` +
-    (orderDiscount ? `Diskon: -${fmtRp(orderDiscount)}\n` : '') +
-    `Total: ${fmtRp(orderTotal)}\n` +
-    (poGroup ? 'Grup patungan dibuka/diikuti. Info peserta dan progres hanya tampil di invoice setelah pembayaran Anda dikonfirmasi.\n' : '') +
-    `Invoice: ${redirectUrl}`;
+  const summary = locale === 'ms'
+    ? `Pesanan baharu #${code}\nPerkhidmatan: ${serviceName}${plan ? ` - ${plan}` : ''}\nKuantiti: ${quantity}\nHarga: ${fmtAmount(invoiceAmount, invoiceCurrency)}${invoiceCurrency !== 'IDR' ? ' ≈ ' + fmtRp(orderAmountIdr) : ''}\nCaj perkhidmatan: ${fmtRp(orderFee)}\n${orderDiscount ? `Diskaun: -${fmtRp(orderDiscount)}\n` : ''}Jumlah: ${fmtRp(orderTotal)}\n${poGroup ? 'Kumpulan kongsi telah dibuka/disertai. Maklumat peserta hanya dipaparkan pada invois selepas pembayaran anda disahkan.\n' : ''}Invois: ${redirectUrl}`
+    : `Pesanan baru #${code}\nLayanan: ${serviceName}${plan ? ` - ${plan}` : ''}\nJumlah produk: ${quantity}\nHarga: ${fmtAmount(invoiceAmount, invoiceCurrency)}${invoiceCurrency !== 'IDR' ? ' ≈ ' + fmtRp(orderAmountIdr) : ''}\nBiaya fee: ${fmtRp(orderFee)}\n${orderDiscount ? `Diskon: -${fmtRp(orderDiscount)}\n` : ''}Total: ${fmtRp(orderTotal)}\n${poGroup ? 'Grup patungan dibuka/diikuti. Info peserta dan progres hanya tampil di invoice setelah pembayaran Anda dikonfirmasi.\n' : ''}Invoice: ${redirectUrl}`;
   await addMessage(db, convId, 'system', summary, {
     type: 'order', order_id: orderId, code, status: 'baru',
-    service_name: serviceName, plan, amount: invoiceAmount, currency: invoiceCurrency,
-    amount_idr: orderAmountIdr, fee: orderFee, discount: orderDiscount, total: orderTotal, invoice_url: redirectUrl,
+    service_name: serviceName, plan, amount: invoiceAmount, unit_amount: invoiceUnitAmount, quantity, currency: invoiceCurrency,
+    amount_idr: orderAmountIdr, unit_amount_idr: unitAmountIdr, fee: orderFee, discount: orderDiscount, seller_discount: sellerCut, total: orderTotal, invoice_url: redirectUrl,
     product_key: seatProduct ? productKey : poProduct ? poKey : undefined,
   });
-  if (s.order_auto_reply) await addMessage(db, convId, 'system', s.order_auto_reply);
+  if (s.order_auto_reply) await addMessage(db, convId, 'system', locale === 'id' ? s.order_auto_reply : tr(locale, 'order_auto_reply'));
   // Agen AI menyusul dengan panduan langkah pembayaran.
   if (ai && Number(conv.ai_enabled) === 1) context.waitUntil(scheduleAiReply(env, convId).catch((e) => console.error('[ai]', e)));
 
-  return ok({ token: conv.token, redirectUrl, order: { id: orderId, code, total: orderTotal, fee: orderFee, expires_at: expiresAt } });
+  return ok({
+    token: conv.token, redirectUrl, account_type: conv.account_type || 'customer', locale,
+    seller: { discount_pct: SELLER_DISCOUNT_PCT, min_quantity: SELLER_MIN_QUANTITY, discount: sellerCut },
+    order: { id: orderId, code, quantity, total: orderTotal, fee: orderFee, discount: orderDiscount, expires_at: expiresAt },
+  });
 }

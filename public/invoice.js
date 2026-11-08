@@ -5,6 +5,9 @@
 
   var root = document.getElementById("invoice");
   if (!root) return;
+  var localeApi = window.GoisiinnLocale;
+  var locale = function () { return localeApi ? localeApi.get() : "id"; };
+  var t = function (key) { return localeApi ? localeApi.t(key) : key; };
 
   var POLL_MS = 5000;
   var code = (location.pathname.match(/\/inv\/([^/?#]+)/) || [])[1] || "";
@@ -19,8 +22,9 @@
   };
   var fmtExpiry = function (ts) {
     var d = new Date(ts);
-    return d.toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric", timeZone: "Asia/Jakarta" }) + " " +
-      d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Jakarta" }).replace(".", ":") + " WIB";
+    var ms = locale() === "ms", region = ms ? "ms-MY" : "id-ID", zone = ms ? "Asia/Kuala_Lumpur" : "Asia/Jakarta";
+    return d.toLocaleDateString(region, { day: "2-digit", month: "long", year: "numeric", timeZone: zone }) + " " +
+      d.toLocaleTimeString(region, { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: zone }).replace(".", ":") + (ms ? " MYT" : " WIB");
   };
 
   var ICON = {
@@ -34,7 +38,7 @@
   var order = null, active = null, pollTimer = null;
 
   var showError = function (title, text) {
-    root.innerHTML = '<div class="inv-empty"><h1>' + esc(title) + "</h1><p>" + esc(text) + '</p><a href="/jasa-pembayaran.html">Lihat layanan lainnya</a></div>';
+    root.innerHTML = '<div class="inv-empty"><h1>' + esc(title) + "</h1><p>" + esc(text) + '</p><a href="/jasa-pembayaran.html">' + t("back_services") + '</a></div>';
   };
 
   // Daftar metode: QRIS (bila dikonfigurasi) + rekening/e-wallet dari pengaturan admin.
@@ -46,51 +50,54 @@
   };
 
   var heroHtml = function () {
-    if (order.confirmed) return '<section class="inv-hero is-paid"><span class="inv-hero-icon">' + ICON.check + "</span><h1>Pembayaran Sukses</h1><p>Pembayaran sudah dikonfirmasi, sebentar lagi admin akan menghubungi</p></section>";
-    if (order.status === "batal") return '<section class="inv-hero is-dead"><span class="inv-hero-icon">' + ICON.x + "</span><h1>Pesanan Dibatalkan</h1><p>Invoice ini sudah tidak berlaku. Silakan hubungi admin bila ada pertanyaan.</p></section>";
-    if (order.status === "kedaluwarsa") return '<section class="inv-hero is-dead"><span class="inv-hero-icon">' + ICON.x + "</span><h1>Invoice Kedaluwarsa</h1><p>Batas waktu pembayaran sudah lewat. Silakan buat pesanan baru atau hubungi admin.</p></section>";
-    return '<section class="inv-hero"><span class="inv-hero-icon">' + ICON.check + "</span><h1>Pemesanan Berhasil</h1><p>Silakan melakukan pembayaran agar pesanan segera diproses</p></section>";
+    if (order.confirmed) return '<section class="inv-hero is-paid"><span class="inv-hero-icon">' + ICON.check + "</span><h1>" + t("payment_success") + "</h1><p>" + t("payment_confirmed") + "</p></section>";
+    if (order.status === "batal") return '<section class="inv-hero is-dead"><span class="inv-hero-icon">' + ICON.x + "</span><h1>" + t("order_cancelled") + "</h1><p>" + (locale() === "ms" ? "Invois ini tidak lagi sah. Sila hubungi admin jika anda mempunyai pertanyaan." : "Invoice ini sudah tidak berlaku. Silakan hubungi admin bila ada pertanyaan.") + "</p></section>";
+    if (order.status === "kedaluwarsa") return '<section class="inv-hero is-dead"><span class="inv-hero-icon">' + ICON.x + "</span><h1>" + t("invoice_expired") + "</h1><p>" + (locale() === "ms" ? "Tempoh pembayaran telah tamat. Sila buat pesanan baharu atau hubungi admin." : "Batas waktu pembayaran sudah lewat. Silakan buat pesanan baru atau hubungi admin.") + "</p></section>";
+    return '<section class="inv-hero"><span class="inv-hero-icon">' + ICON.check + "</span><h1>" + t("order_success") + "</h1><p>" + t("pay_prompt") + "</p></section>";
   };
 
   var detailHtml = function () {
     var nominal = order.plan && order.plan.toLowerCase() !== "custom" ? order.plan + " \u00b7 " : "";
     nominal += fmtAmount(order.amount, order.currency) + (order.currency !== "IDR" ? " (\u2248 " + fmtRp(order.amount_idr) + ")" : "");
-    return '<div class="inv-wrap" style="padding:0"><article class="inv-card"><h2>Detail Pesanan</h2><div class="inv-rows">' +
-      "<div><span>Nama:</span><b>" + esc(order.name) + "</b></div>" +
-      "<div><span>No Invoice:</span><b>" + esc(order.invoice) + "</b></div>" +
-      "<div><span>Layanan:</span><b>" + esc(order.service) + "</b></div>" +
-      "<div><span>Nominal:</span><b>" + esc(nominal) + "</b></div>" +
-      "<div><span>Biaya Layanan:</span><b>" + fmtRp(order.fee) + "</b></div>" +
-      (order.discount > 0 ? "<div><span>Diskon:</span><b>-" + fmtRp(order.discount) + "</b></div>" : "") +
-      '<div><span>Status:</span><b><span class="inv-pill is-' + esc(order.status) + '">' + esc(order.status_label) + "</span></b></div>" +
-      '<div class="is-total"><span>Total Pembayaran:</span><b>' + fmtRp(order.total) + "</b></div>" +
-      (order.po ? '<div><span>Peserta sudah membayar:</span><b>' + esc(order.po.paid_count + '/' + order.po.target_size + ' peserta') + '</b></div>' : '') +
+    var regularDiscount = Math.max(0, Number(order.discount || 0) - Number(order.seller_discount || 0));
+    return '<div class="inv-wrap" style="padding:0"><article class="inv-card"><h2>' + t("order_detail") + '</h2><div class="inv-rows">' +
+      "<div><span>" + t("name") + ":</span><b>" + esc(order.name) + "</b></div>" +
+      "<div><span>" + t("invoice_no") + ":</span><b>" + esc(order.invoice) + "</b></div>" +
+      "<div><span>" + t("service") + ":</span><b>" + esc(order.service) + "</b></div>" +
+      (Number(order.quantity || 1) > 1 ? "<div><span>" + t("quantity") + ":</span><b>" + esc(order.quantity) + "</b></div>" : "") +
+      "<div><span>" + t("nominal") + ":</span><b>" + esc(nominal) + "</b></div>" +
+      "<div><span>" + t("service_fee") + ":</span><b>" + fmtRp(order.fee) + "</b></div>" +
+      (regularDiscount > 0 ? "<div><span>" + t("discount") + ":</span><b>-" + fmtRp(regularDiscount) + "</b></div>" : "") +
+      (Number(order.seller_discount) > 0 ? "<div><span>" + t("seller_discount") + ":</span><b>-" + fmtRp(order.seller_discount) + "</b></div>" : "") +
+      '<div><span>' + t("status") + ':</span><b><span class="inv-pill is-' + esc(order.status) + '">' + esc(order.status_label) + "</span></b></div>" +
+      '<div class="is-total"><span>' + t("total_payment") + ':</span><b>' + fmtRp(order.total) + "</b></div>" +
+      (order.po ? '<div><span>' + (locale() === "ms" ? "Peserta telah membayar" : "Peserta sudah membayar") + ':</span><b>' + esc(order.po.paid_count + '/' + order.po.target_size + ' peserta') + '</b></div>' : '') +
       "</div></article>" +
-      (order.po ? '<article class="inv-card inv-po-notice"><strong>Grup Patungan ' + esc(order.po.product_name.replace(/^Patungan\s+/i, "")) + '</strong><p>Info grup ini hanya tersedia setelah pembayaran Anda tercatat. Berikut peserta yang pembayarannya sudah dikonfirmasi:</p><ul class="inv-po-members">' + order.po.paid_members.map(function (name) { return '<li>' + esc(name) + '</li>'; }).join('') + '</ul><p>Patungan diproses setelah empat peserta membayar. Batas pengumpulan maksimal tujuh hari sejak grup dibuka. Jika grup tidak terpenuhi, admin akan menghubungi peserta untuk tindak lanjut.</p><p>Opsi patungan memakai satu paket bersama. Jangan membagikan kata sandi akun pribadi Anda.</p></article>' : '') +
-      '<article class="inv-card"><h2>Panduan Pembayaran</h2><ol class="inv-steps">' +
-      "<li>Buka M-Banking / Internet Banking / e-wallet yang anda gunakan saat ini</li>" +
-      "<li>Lakukan pembayaran ke Rekening / QRIS yang tersedia. Untuk QRIS, nominal sudah terisi otomatis saat di-scan</li>" +
-      "<li>Klik Konfirmasi di Chat Web setelah membayar</li>" +
-      "<li>Setelah pembayaran masuk, admin akan segera memproses pesanan</li>" +
+      (order.po ? (locale() === "ms"
+        ? '<article class="inv-card inv-po-notice"><strong>Kumpulan Perkongsian ' + esc(order.po.product_name.replace(/^Patungan\s+/i, "")) + '</strong><p>Maklumat kumpulan hanya tersedia selepas pembayaran anda direkodkan. Berikut ialah peserta yang pembayarannya telah disahkan:</p><ul class="inv-po-members">' + order.po.paid_members.map(function (name) { return '<li>' + esc(name) + '</li>'; }).join('') + '</ul><p>Perkongsian diproses selepas empat peserta membuat pembayaran. Tempoh pengumpulan maksimum ialah tujuh hari selepas kumpulan dibuka. Jika kumpulan tidak mencukupi, admin akan menghubungi peserta untuk tindakan lanjut.</p><p>Pilihan perkongsian menggunakan satu pakej bersama. Jangan kongsi kata laluan akaun peribadi anda.</p></article>'
+        : '<article class="inv-card inv-po-notice"><strong>Grup Patungan ' + esc(order.po.product_name.replace(/^Patungan\s+/i, "")) + '</strong><p>Info grup ini hanya tersedia setelah pembayaran Anda tercatat. Berikut peserta yang pembayarannya sudah dikonfirmasi:</p><ul class="inv-po-members">' + order.po.paid_members.map(function (name) { return '<li>' + esc(name) + '</li>'; }).join('') + '</ul><p>Patungan diproses setelah empat peserta membayar. Batas pengumpulan maksimal tujuh hari sejak grup dibuka. Jika grup tidak terpenuhi, admin akan menghubungi peserta untuk tindak lanjut.</p><p>Opsi patungan memakai satu paket bersama. Jangan membagikan kata sandi akun pribadi Anda.</p></article>') : '') +
+      '<article class="inv-card"><h2>' + t("payment_guide") + '</h2><ol class="inv-steps">' +
+      (locale() === "ms" ? "<li>Buka aplikasi perbankan atau e-wallet yang anda gunakan</li><li>Buat pembayaran ke akaun / QRIS yang tersedia. Nilai QRIS diisi secara automatik</li><li>Klik Sahkan Melalui Chat Web selepas membayar</li><li>Selepas pembayaran diterima, admin akan memproses pesanan</li>" : "<li>Buka M-Banking / Internet Banking / e-wallet yang anda gunakan saat ini</li><li>Lakukan pembayaran ke Rekening / QRIS yang tersedia. Untuk QRIS, nominal sudah terisi otomatis saat di-scan</li><li>Klik Konfirmasi di Chat Web setelah membayar</li><li>Setelah pembayaran masuk, admin akan segera memproses pesanan</li>") +
       "</ol></article></div>";
   };
 
   var methodBody = function (m) {
-    if (!m) return '<small>Metode pembayaran belum tersedia. Silakan hubungi admin lewat chat web.</small>';
+    if (!m) return '<small>' + (locale() === "ms" ? "Kaedah pembayaran belum tersedia. Sila hubungi admin melalui chat web." : "Metode pembayaran belum tersedia. Silakan hubungi admin lewat chat web.") + '</small>';
     if (m.qris) {
       // QR dibuat server per invoice; hanya dimuat selama invoice masih bisa dibayar.
       var src = "/api/invoice?action=qris&code=" + encodeURIComponent(order.invoice);
       return '<img class="inv-qris-logo" src="/assets/payment-methods/qris.png" alt="QRIS">' +
-        "<small>" + esc(order.qris.merchant || "QRIS BayarKita") + "</small>" +
-        '<div class="inv-qr">' + (order.payable ? '<img alt="QRIS BayarKita" width="540" height="540" src="' + src + '">' : "") + "</div>" +
+        "<small>" + esc(order.qris.merchant || "QRIS Goisiinn") + "</small>" +
+        '<div class="inv-qr">' + (order.payable ? '<img alt="QRIS Goisiinn" width="540" height="540" src="' + src + '">' : "") + "</div>" +
         '<div class="inv-qr-amount">' + fmtRp(order.total) + "</div>" +
-        '<p class="inv-qr-note">Scan dengan aplikasi bank / e-wallet apa pun. Nominal sudah terisi otomatis, tinggal bayar.</p>';
+        '<p class="inv-qr-note">' + (locale() === "ms" ? "Imbas dengan mana-mana aplikasi bank / e-wallet. Nilai pembayaran diisi secara automatik." : "Scan dengan aplikasi bank / e-wallet apa pun. Nominal sudah terisi otomatis, tinggal bayar.") + '</p>';
     }
+    var methodLabel = locale() === "ms" ? (m.type === "bank" ? "Nombor Akaun" : "Nombor " + m.name) : m.label;
     return '<img class="inv-qris-logo" src="' + esc(m.logo) + '" alt="' + esc(m.name) + '">' +
-      "<small>" + esc(m.label) + "</small>" +
+      "<small>" + esc(methodLabel) + "</small>" +
       '<div class="inv-acc">' + esc(m.number) + "</div>" +
       (m.owner ? '<div class="inv-owner">A/N ' + esc(m.owner) + "</div>" : "") +
-      '<button class="inv-copy" type="button" data-copy="' + esc(m.number) + '"' + (order.payable ? "" : " disabled") + '>' + ICON.copy + "<span>Salin</span></button>";
+      '<button class="inv-copy" type="button" data-copy="' + esc(m.number) + '"' + (order.payable ? "" : " disabled") + '>' + ICON.copy + "<span>" + t("copy") + "</span></button>";
   };
 
   var payHtml = function () {
@@ -101,22 +108,24 @@
     }
     var cur = list.filter(function (m) { return m.code === active; })[0];
     var tabs = list.map(function (m) {
-      var tip = m.disabled && m.qris ? ' data-tip="QRIS nonaktif untuk total pembayaran di atas ' + fmtRp(order.qris.max) + '"' : "";
+      var tip = m.disabled && m.qris ? ' data-tip="' + (locale() === "ms" ? "QRIS tidak aktif untuk jumlah pembayaran melebihi " : "QRIS nonaktif untuk total pembayaran di atas ") + fmtRp(order.qris.max) + '"' : "";
       return '<span class="inv-tip"' + tip + '><button class="inv-tab' + (m.code === active ? " is-active" : "") + '" type="button" data-method="' + esc(m.code) + '"' + (m.disabled ? " disabled" : "") + ' aria-label="' + esc(m.name) + '"><img src="' + esc(m.logo) + '" alt="' + esc(m.name) + '"></button></span>';
     }).join("");
     var locked = !order.payable;
-    var badge = order.confirmed ? "Pembayaran Sukses" : order.status === "batal" ? "Dibatalkan" : order.status === "kedaluwarsa" ? "Kedaluwarsa" : "";
-    return '<article class="inv-card"><h2>Metode Pembayaran</h2>' +
-      (list.length ? '<div class="inv-tabs" aria-label="Pilih metode pembayaran">' + tabs + "</div>" : "") +
+    var badge = locale() === "ms"
+      ? (order.confirmed ? "Pembayaran Berjaya" : order.status === "batal" ? "Dibatalkan" : order.status === "kedaluwarsa" ? "Tamat Tempoh" : "")
+      : (order.confirmed ? "Pembayaran Sukses" : order.status === "batal" ? "Dibatalkan" : order.status === "kedaluwarsa" ? "Kedaluwarsa" : "");
+    return '<article class="inv-card"><h2>' + t("payment_methods") + '</h2>' +
+      (list.length ? '<div class="inv-tabs" aria-label="' + (locale() === "ms" ? "Pilih kaedah pembayaran" : "Pilih metode pembayaran") + '">' + tabs + "</div>" : "") +
       '<div class="inv-method' + (locked ? " is-locked" + (order.confirmed ? "" : " is-dead") : "") + '">' + methodBody(cur) + (locked ? '<span class="inv-badge">' + esc(badge) + "</span>" : "") + "</div>" +
-      '<div class="inv-total-bar"><span>Total Pembayaran</span><strong>' + fmtRp(order.total) + "</strong></div>" +
-      (order.payable ? '<button class="inv-wa inv-chat-confirm" type="button" data-chat-confirm>' + ICON.chat + "Konfirmasi Via Chat Web" + "</button>" : "") +
-      (order.payable && order.expires_ts ? '<p class="inv-expiry">Berlaku sampai <b>' + esc(fmtExpiry(order.expires_ts)) + "</b></p>" : "") +
+      '<div class="inv-total-bar"><span>' + t("total_payment") + '</span><strong>' + fmtRp(order.total) + "</strong></div>" +
+      (order.payable ? '<button class="inv-wa inv-chat-confirm" type="button" data-chat-confirm>' + ICON.chat + t("confirm_chat") + "</button>" : "") +
+      (order.payable && order.expires_ts ? '<p class="inv-expiry">' + t("valid_until") + ' <b>' + esc(fmtExpiry(order.expires_ts)) + "</b></p>" : "") +
       "</article>";
   };
 
   var render = function () {
-    document.title = "Invoice " + order.invoice + " - BayarKita";
+    document.title = (locale() === "ms" ? "Invois " : "Invoice ") + order.invoice + " - Goisiinn";
     root.innerHTML = heroHtml() + '<div class="inv-grid">' + detailHtml() + payHtml() + "</div>";
   };
 
@@ -127,7 +136,7 @@
     if (confirm) {
       var chat = window.FdvChat;
       if (chat && chat.openWithMessage) {
-        chat.openWithMessage("Halo admin, saya sudah melakukan pembayaran untuk invoice " + order.invoice + " (" + order.service + ") atas nama " + order.name + ". Mohon dicek ya.");
+        chat.openWithMessage(locale() === "ms" ? "Hai admin, saya telah membuat pembayaran untuk invois " + order.invoice + " (" + order.service + ") atas nama " + order.name + ". Sila semak." : "Halo admin, saya sudah melakukan pembayaran untuk invoice " + order.invoice + " (" + order.service + ") atas nama " + order.name + ". Mohon dicek ya.");
       } else if (chat && chat.open) {
         chat.open();
       }
@@ -136,7 +145,7 @@
     var cp = e.target.closest("[data-copy]");
     if (cp && order.payable && !cp.disabled) {
       var txt = cp.getAttribute("data-copy").replace(/\s+/g, "");
-      var done = function () { cp.classList.add("is-done"); cp.querySelector("span").textContent = "Tersalin"; setTimeout(function () { cp.classList.remove("is-done"); cp.querySelector("span").textContent = "Salin"; }, 1600); };
+      var done = function () { cp.classList.add("is-done"); cp.querySelector("span").textContent = t("copied"); setTimeout(function () { cp.classList.remove("is-done"); cp.querySelector("span").textContent = t("copy"); }, 1600); };
       var failed = function () { cp.querySelector("span").textContent = "Gagal, salin nomor manual"; };
       if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done, failed); else failed();
     }
@@ -162,13 +171,15 @@
     }).catch(function () {});
   };
 
-  if (!/^FDV-\d{6}-[0-9A-F]{5,32}$/.test(code)) { showError("Invoice tidak ditemukan", "Periksa kembali link invoice Anda."); return; }
+  if (!/^FDV-\d{6}-[0-9A-F]{5,32}$/.test(code)) { showError(t("invoice_not_found"), locale() === "ms" ? "Semak semula pautan invois anda." : "Periksa kembali link invoice Anda."); return; }
   load().then(function (o) {
-    order = o; render();
+    order = o;
+    if (localeApi && order.locale) localeApi.set(order.locale, false);
+    render();
     if (order.status !== "selesai" && order.status !== "batal") pollTimer = setInterval(poll, POLL_MS);
   }).catch(function (e) {
-    if (e.status === 404) showError("Invoice tidak ditemukan", "Periksa kembali link invoice Anda.");
-    else showError("Gagal memuat invoice", "Periksa koneksi Anda lalu muat ulang halaman.");
+    if (e.status === 404) showError(t("invoice_not_found"), locale() === "ms" ? "Semak semula pautan invois anda." : "Periksa kembali link invoice Anda.");
+    else showError(t("load_failed"), locale() === "ms" ? "Semak sambungan anda dan muat semula halaman." : "Periksa koneksi Anda lalu muat ulang halaman.");
   });
   document.addEventListener("visibilitychange", function () { if (order) poll(); });
 })();

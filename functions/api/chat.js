@@ -6,10 +6,11 @@
  *   POST ?action=seen    {token}                  -> tandai pesan admin sudah dibaca
  */
 import {
-  ok, fail, param, strParam, requirePost, now, fmtLocal, parseLocal, secondsAgo, normalizePhone,
+  ok, fail, param, strParam, requirePost, now, fmtLocal, parseLocal, secondsAgo, normalizePhone, supportedPhone,
   settingsAll, publicSettings, conversationByToken, createConversation, addMessage, messagesSince, hasPendingReply,
 } from '../_lib/core.js';
 import { pickAgent, randInt, greetingFor, scheduleAiReply } from '../_lib/ai.js';
+import { normalizeLocale, tr } from '../_lib/i18n.js';
 
 const aiOn = (s, env) => String(s.ai_enabled) === '1' && !!env.AI_API_KEY;
 
@@ -20,10 +21,11 @@ async function ensureConnected(db, conv) {
   if (left > 0) return { connected: false, queue_left: left };
   const c = await db.prepare("SELECT COUNT(*) c FROM messages WHERE conversation_id = ? AND sender = 'system' AND meta LIKE '%\"connected\"%'").bind(conv.id).first('c');
   if (Number(c) === 0) {
-    await addMessage(db, conv.id, 'system', `Anda terhubung dengan ${conv.agent}.`, { type: 'connected', agent: conv.agent });
+    const locale = normalizeLocale(conv.locale);
+    await addMessage(db, conv.id, 'system', tr(locale, 'connected', conv.agent), { type: 'connected', agent: conv.agent });
     // Sapaan: 2-4 dtk "membaca" lalu 4-7 dtk mengetik.
     const readMs = randInt(2, 4) * 1000, typeMs = randInt(4, 7) * 1000;
-    await addMessage(db, conv.id, 'admin', greetingFor(conv.agent, conv.name),
+    await addMessage(db, conv.id, 'admin', greetingFor(conv.agent, conv.name, locale),
       { agent: conv.agent, greeting: 1, typing_from: fmtLocal(new Date(Date.now() + readMs)) },
       fmtLocal(new Date(Date.now() + readMs + typeMs)));
   }
@@ -39,18 +41,19 @@ export async function onRequest(context) {
   switch (action) {
     case 'start': {
       requirePost(ctx);
+      const locale = normalizeLocale(strParam(ctx, 'locale', 5) || ctx.locale);
       const name = strParam(ctx, 'name', 120);
-      const digits = normalizePhone(strParam(ctx, 'phone', 40));
+      const digits = normalizePhone(strParam(ctx, 'phone', 40), locale);
       if (name.length < 2) fail('Nama wajib diisi.');
-      if (digits.length < 9 || digits.length > 15) fail('Nomor WhatsApp tidak valid.');
+      if (!supportedPhone(digits)) fail(tr(locale, 'invalid_phone'));
       const s = await settingsAll(db);
       let agent = null, queue = 0;
       if (aiOn(s, env)) {
         agent = pickAgent();
         queue = randInt(Number(s.ai_queue_min || 6), Number(s.ai_queue_max || 20));
       }
-      const conv = await createConversation(db, s, name, digits, agent, agent ? fmtLocal(new Date(Date.now() + queue * 1000)) : null);
-      return ok({ token: conv.token, name: conv.name, phone: conv.phone, queue_left: queue, agent: agent || null });
+      const conv = await createConversation(db, s, name, digits, agent, agent ? fmtLocal(new Date(Date.now() + queue * 1000)) : null, locale);
+      return ok({ token: conv.token, name: conv.name, phone: conv.phone, queue_left: queue, agent: agent || null, locale, account_type: conv.account_type || 'customer' });
     }
 
     case 'poll': {
@@ -71,6 +74,8 @@ export async function onRequest(context) {
         typing: st.connected && (await hasPendingReply(db, conv.id)),
         unread: Number(conv.unread_customer),
         admin_online: ai || publicSettings(s).admin_online,
+        locale: normalizeLocale(conv.locale),
+        account_type: conv.account_type || 'customer',
       });
     }
 
@@ -78,6 +83,10 @@ export async function onRequest(context) {
       requirePost(ctx);
       const conv = await conversationByToken(db, strParam(ctx, 'token', 64));
       if (!conv) fail('Sesi chat tidak ditemukan.', 404);
+      const messageLocale = normalizeLocale(strParam(ctx, 'locale', 5) || conv.locale || ctx.locale);
+      if (messageLocale !== normalizeLocale(conv.locale)) {
+        await db.prepare('UPDATE conversations SET locale = ? WHERE id = ?').bind(messageLocale, conv.id).run();
+      }
       const body = strParam(ctx, 'body', 4000);
       if (!body) fail('Pesan kosong.');
       // Rate limit ringan: maksimal 20 pesan pelanggan per menit per percakapan.

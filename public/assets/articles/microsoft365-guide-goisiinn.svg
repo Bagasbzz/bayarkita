@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Panduan memilih Microsoft 365</title><desc id="desc">Ilustrasi dokumen, tabel kerja, dan penyimpanan untuk panduan produktivitas Goisiinn.</desc>
+  <defs><pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M60 0H0V60" fill="none" stroke="#2a3b5d"/></pattern></defs>
+  <rect width="1200" height="675" fill="#182743"/><rect x="600" width="600" height="675" fill="url(#grid)"/><circle cx="1005" cy="340" r="228" fill="#243959"/>
+  <path d="M0 611H1200" stroke="#3a4864"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#f5f7fc">
+    <rect x="56" y="50" width="34" height="34" rx="10" fill="#f97316"/><path d="m65 67 6 6 11-14" stroke="#fff" stroke-width="4" fill="none"/><text x="103" y="76" font-size="26" font-weight="700">Goisiinn</text>
+    <text x="58" y="195" font-size="16" letter-spacing="4" fill="#a5bcdf">BEKERJA LEBIH TERATUR</text>
+    <text x="56" y="281" font-size="59" font-weight="700">Microsoft 365</text><text x="58" y="353" font-size="45" fill="#a5bcdf">Satu langganan.</text>
+    <text x="58" y="431" font-size="24">Pahami aplikasi, lisensi,</text><text x="58" y="467" font-size="24">dan pilihan perpanjangan.</text>
+    <text x="58" y="650" font-size="15" letter-spacing="2">PANDUAN GOISIINN</text><text x="1100" y="650" font-size="18">04</text>
+  </g>
+  <g transform="translate(692 144) rotate(-9 150 180)"><rect x="12" y="14" width="265" height="326" rx="20" fill="#0e192c"/><rect width="265" height="326" rx="20" fill="#f1f6ff"/>
+    <rect x="28" y="29" width="68" height="65" rx="13" fill="#3f6caf"/><path d="M43 45 51 78 62 56 73 78 81 45" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M29 127H226M29 154H226M29 181H184M29 222H226M29 249H207M29 276H164" stroke="#c2d0e7" stroke-width="9" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(886 258) rotate(9 110 145)"><rect x="10" y="14" width="249" height="285" rx="18" fill="#0e192c"/><rect width="249" height="285" rx="18" fill="#e0ece5"/>
+    <rect x="24" y="24" width="65" height="56" rx="10" fill="#356b53"/><path d="m45 37 23 29m0-29L45 66" stroke="#fff" stroke-width="5"/>
+    <path d="M25 112H224M25 151H224M25 190H224M25 229H224M25 268H224M25 112V268M90 112V268M157 112V268M224 112V268" stroke="#a2bbae" stroke-width="2"/>
+    <path d="M43 222V188M108 222V166M175 222V139" stroke="#54886c" stroke-width="18"/>
+  </g><circle cx="1079" cy="171" r="46" fill="#f97316"/><path d="M1058 180h39a12 12 0 0 0-4-23 16 16 0 0 0-30 1 11 11 0 0 0-5 22" fill="#fff"/>
+</svg>

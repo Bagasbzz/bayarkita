@@ -1,5 +1,9 @@
 (function () {
   "use strict";
+  var localeApi = window.GoisiinnLocale;
+  var locale = function () { return localeApi ? localeApi.get() : "id"; };
+  var t = function (key) { return localeApi ? localeApi.t(key) : key; };
+  var esc = function (value) { return String(value == null ? "" : value).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
 
   // Catat kunjungan tanpa mengirim URL, IP, atau identitas pribadi.
   fetch("/api/visits", { method: "POST", credentials: "same-origin", headers: { "X-Requested-With": "fetch" }, keepalive: true }).catch(function () {});
@@ -342,6 +346,8 @@
     var openCheckout = function () {
       var priceIdr = state.amount * rateFor(state.currency);
       var saved = window.FdvChat && window.FdvChat.getSession();
+      var seller = !!(saved && saved.account_type === "seller");
+      var quantityDefault = seller && !state.poKey ? 3 : 1;
       var overlay = document.createElement("div");
       overlay.className = "checkout-modal-overlay";
       overlay.setAttribute("role", "presentation");
@@ -353,17 +359,28 @@
         '<div class="checkout-product-heading"><span class="checkout-modal-logo"><span class="brand-logo brand-image-logo">' +
         (brandImg ? '<img alt="" width="320" height="160" src="' + brandImg.getAttribute("src") + '">' : "") +
         '</span></span><div class="checkout-product-copy"><h2 id="checkout-title"></h2><p></p><strong></strong></div></div>' +
-        '<div class="checkout-total-card"><span>Total Pembayaran</span><strong></strong>' + ICON_SHIELD + "</div>" +
+        '<div class="checkout-total-card"><span>' + t("checkout_total") + '</span><strong></strong>' + ICON_SHIELD + "</div>" +
          '<form class="checkout-form" novalidate>' +
-        '<label>Nama<span class="checkout-input-wrap">' + ICON_USER + '<input autocomplete="name" placeholder="Masukkan nama lengkap Anda" value="' + (saved && saved.name ? saved.name.replace(/"/g, "&quot;") : "") + '"></span></label>' +
-         '<label>No WhatsApp<span class="checkout-input-wrap">' + ICON_CHAT + '<input autocomplete="tel" inputmode="tel" placeholder="Contoh: 0812 3456 7890" value="' + (saved && saved.phone ? String(saved.phone).replace(/[^\d+\- ]/g, "") : "") + '"></span></label>' +
-          (state.productKey ? '<label>Email untuk undangan seat<span class="checkout-input-wrap"><input type="email" name="customer_email" autocomplete="email" inputmode="email" placeholder="nama@email.com" required></span></label><p class="checkout-seat-note">Seat ini untuk satu pengguna. Undangan dikirim ke email yang Anda isi; seat Business tidak dikenai fee.</p>' : state.poKey ? '<label>Email peserta patungan<span class="checkout-input-wrap"><input type="email" name="customer_email" autocomplete="email" inputmode="email" placeholder="nama@email.com" required></span></label><p class="checkout-seat-note">Email ini untuk identitas dan tindak lanjut, bukan undangan seat Business. Grup patungan berisi empat peserta; proses dimulai setelah pembayaran peserta dikonfirmasi. Daftar peserta yang sudah membayar hanya terlihat oleh anggota grup yang sudah membayar.</p>' : "") +
-        '<div class="checkout-actions"><button class="checkout-cancel-button" type="button">Batal</button>' +
-        '<button class="checkout-submit-button" type="submit"><span>Lanjutkan</span></button></div></form></section>';
+        '<label>' + t("name") + '<span class="checkout-input-wrap">' + ICON_USER + '<input name="customer_name" autocomplete="name" placeholder="' + t("full_name") + '" value="' + esc((saved && saved.name) || "") + '"></span></label>' +
+         '<label>' + t("whatsapp") + '<span class="checkout-input-wrap">' + ICON_CHAT + '<input name="customer_phone" autocomplete="tel" inputmode="tel" placeholder="' + t("phone_placeholder") + '" value="' + esc((saved && saved.phone) || "") + '"></span></label>' +
+         '<label>' + t("quantity") + '<span class="checkout-input-wrap"><input name="quantity" type="number" inputmode="numeric" min="1" max="100" value="' + quantityDefault + '"' + (state.poKey ? " disabled" : "") + '></span></label>' +
+         '<p class="checkout-seller-note ' + (seller ? "is-active" : "") + '">' + (seller ? t("seller_checkout_active") : t("seller_checkout_locked")) + '</p>' +
+          (state.productKey ? '<label>' + t("seat_email") + '<span class="checkout-input-wrap"><input type="email" name="customer_email" autocomplete="email" inputmode="email" placeholder="nama@email.com" required></span></label>' : state.poKey ? '<label>' + t("participant_email") + '<span class="checkout-input-wrap"><input type="email" name="customer_email" autocomplete="email" inputmode="email" placeholder="nama@email.com" required></span></label>' : "") +
+        '<div class="checkout-actions"><button class="checkout-cancel-button" type="button">' + t("cancel") + '</button>' +
+        '<button class="checkout-submit-button" type="submit"><span>' + t("continue") + '</span></button></div></form></section>';
       overlay.querySelector("#checkout-title").textContent = serviceName;
       overlay.querySelector(".checkout-product-copy p").textContent = state.plan;
-      overlay.querySelector(".checkout-product-copy strong").textContent = fmtRp(priceIdr);
-      overlay.querySelector(".checkout-total-card strong").textContent = fmtRp(state.total);
+      overlay.querySelector(".checkout-product-copy strong").textContent = t("unit_price") + ": " + fmtRp(priceIdr);
+      var quantityInput = overlay.querySelector('[name="quantity"]');
+      var currentTotals = function () {
+        var quantity = state.poKey ? 1 : Math.max(1, Math.min(100, parseInt(quantityInput.value, 10) || 1));
+        var normal = Math.round(state.total * quantity);
+        var sellerCut = seller && quantity >= 3 ? Math.round(normal * 0.08) : 0;
+        overlay.querySelector(".checkout-total-card strong").textContent = fmtRp(normal - sellerCut);
+        return { quantity: quantity, sellerDiscount: sellerCut, total: normal - sellerCut };
+      };
+      quantityInput.addEventListener("input", currentTotals);
+      currentTotals();
       var close = function () { overlay.remove(); document.removeEventListener("keydown", onKey); document.body.style.overflow = previousBodyOverflow; };
       var onKey = function (e) { if (e.key === "Escape") close(); };
       overlay.querySelector(".checkout-modal-close").addEventListener("click", close);
@@ -382,14 +399,15 @@
           msg.textContent = text;
           form.insertBefore(msg, form.querySelector(".checkout-actions"));
         };
-         var name = inputs[0].value.trim(), phone = inputs[1].value.trim();
+         var name = form.customer_name.value.trim(), phone = form.customer_phone.value.trim();
+         var checkout = currentTotals();
          var emailInput = form.querySelector('[name="customer_email"]');
          var customerEmail = emailInput ? emailInput.value.trim().toLowerCase() : "";
-        if (!name || !phone) return showErr("Nama dan nomor WhatsApp wajib diisi.");
-         if (emailInput && (!emailInput.checkValidity() || !customerEmail)) { emailInput.focus(); return showErr("Masukkan email yang valid untuk undangan seat."); }
+        if (!name || !phone) return showErr(t("required_identity"));
+         if (emailInput && (!emailInput.checkValidity() || !customerEmail)) { emailInput.focus(); return showErr(t("invalid_email")); }
         var submitBtn = form.querySelector(".checkout-submit-button");
         submitBtn.disabled = true;
-        submitBtn.firstChild.textContent = "Memproses...";
+        submitBtn.firstChild.textContent = t("processing");
         var session = window.FdvChat && window.FdvChat.getSession();
         fetch(API_BASE + "orders", {
           method: "POST", credentials: "same-origin",
@@ -397,18 +415,18 @@
           body: JSON.stringify({
             name: name, phone: phone, token: session ? session.token : "",
             service_slug: serviceSlug, service_name: serviceName, plan: state.plan,
-             amount: state.amount, currency: state.currency,
+             amount: state.amount, currency: state.currency, quantity: checkout.quantity, locale: locale(),
              product_key: state.productKey, po_key: state.poKey, customer_email: customerEmail
           })
         }).then(function (r) { return r.json(); }).then(function (r) {
           if (!r || !r.ok) throw new Error((r && r.error) || "Pesanan gagal dibuat. Silakan coba lagi.");
           if (!/^\/inv\/FDV-\d{6}-[0-9A-F]{5,32}$/.test(r.redirectUrl || "")) throw new Error("Link invoice tidak valid. Silakan hubungi admin sebelum membuat ulang pesanan.");
           // Simpan sesi chat (riwayat pesanan tetap bisa dibuka lewat widget), lalu ke halaman invoice.
-          if (window.FdvChat && window.FdvChat.saveSession) window.FdvChat.saveSession({ token: r.token, name: name, phone: phone });
+          if (window.FdvChat && window.FdvChat.saveSession) window.FdvChat.saveSession({ token: r.token, name: name, phone: phone, account_type: r.account_type || (saved && saved.account_type) || "customer", locale: r.locale || locale() });
           location.href = r.redirectUrl;
         }).catch(function (err) {
           submitBtn.disabled = false;
-          submitBtn.firstChild.textContent = "Lanjutkan";
+          submitBtn.firstChild.textContent = t("continue");
           showErr(err.message === "Failed to fetch" ? "Koneksi gagal. Silakan coba lagi." : err.message);
         });
       });
