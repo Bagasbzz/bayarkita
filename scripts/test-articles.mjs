@@ -29,7 +29,7 @@ for (const [, card] of cards) {
   assert.ok(!/bayar.?kita|fahmidev|<script|<foreignObject|\bon\w+=|(?:href|src)=/i.test(svg), `Unsafe or old thumbnail content: ${src}`);
   assert.match(svg, /goisiinn/i);
 }
-assert.ok(/src="articles\.js\?v=20261108a" defer/.test(html), 'Article navigation script must be loaded');
+assert.ok(/src="articles\.js\?v=20261108b" defer/.test(html), 'Article navigation script must be loaded');
 const elements = Object.fromEntries(guides.map((id) => [id, {
   open: false,
   matches: (selector) => selector === 'details.article-guide',
@@ -62,8 +62,8 @@ if (process.argv[2]) {
   assert.equal(liveHtml.replace(/\r\n/g, '\n'), html.replace(/\r\n/g, '\n'), 'Live article HTML must match local content');
   const resources = [
     ...cards.map(([, card]) => card.match(/src="([^"]+)"/)[1]),
-    'articles.js?v=20261108a',
-    'styles.css?v=20261108a',
+    'articles.js?v=20261108b',
+    'styles.css?v=20261108b',
   ];
   await Promise.all(resources.map(async (resource) => {
     const asset = await fetch(new URL(resource, base), { method: 'HEAD' });

@@ -124,12 +124,19 @@
   function installSwitch() {
     var panel = document.querySelector(".nav-panel");
     if (!panel || panel.querySelector(".locale-switch")) return;
+    var cta = panel.querySelector(".nav-cta");
+    var actions = panel.querySelector(".nav-actions");
+    if (!actions) {
+      actions = document.createElement("div");
+      actions.className = "nav-actions";
+      panel.insertBefore(actions, cta || null);
+      if (cta) actions.appendChild(cta);
+    }
     var label = document.createElement("label");
     label.className = "locale-switch";
     label.setAttribute("aria-label", "Language / Bahasa");
     label.innerHTML = '<span aria-hidden="true">🌐</span><select class="locale-select"><option value="id">ID</option><option value="ms">MY</option></select>';
-    var cta = panel.querySelector(".nav-cta");
-    panel.insertBefore(label, cta || null);
+    actions.insertBefore(label, cta || null);
     label.querySelector("select").addEventListener("change", function (event) { set(event.target.value, true); });
   }
 
