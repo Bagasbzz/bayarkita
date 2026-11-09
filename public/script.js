@@ -248,6 +248,13 @@
       }
     }
     var fmtRp = function (n) { return "Rp " + Math.round(n).toLocaleString("id-ID"); };
+    var fmtCustomerMoney = function (idr) {
+      if (locale() === "ms") {
+        var myrRate = Number(RATES.MYR) || 4400;
+        return "RM " + (Number(idr) / myrRate).toLocaleString("ms-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+      return fmtRp(idr);
+    };
     var fmtPrice = function (n, cur) {
       if (cur === "IDR") return fmtRp(n);
       var sym = { USD: "$", EUR: "\u20ac", GBP: "\u00a3", JPY: "\u00a5", CNY: "\u00a5", THB: "\u0e3f", MYR: "RM" }[cur] || cur + " ";
@@ -287,14 +294,16 @@
       var discount = premium ? Math.min(Math.round(DISCOUNT_USD * RATES.USD), Math.round(priceIdr)) : 0;
       var total = priceIdr + fee - discount;
       state = { amount: amount, currency: cur, fee: fee, discount: discount, total: total, plan: state.plan, productKey: state.productKey, poKey: state.poKey };
-      if (costStrong[0]) costStrong[0].textContent = fmtPrice(amount, cur);
-      if (costStrong[1]) costStrong[1].textContent = fmtRp(fee);
-      if (feeLabel) feeLabel.textContent = feeCut ? "Biaya Fee (hemat " + cut + "%)" : "Biaya Fee";
+      if (costStrong[0]) costStrong[0].textContent = locale() === "ms" ? fmtCustomerMoney(priceIdr) : fmtPrice(amount, cur);
+      if (costStrong[1]) costStrong[1].textContent = fmtCustomerMoney(fee);
+      if (feeLabel) feeLabel.textContent = locale() === "ms"
+        ? (feeCut ? "Caj Perkhidmatan (jimat " + cut + "%)" : "Caj Perkhidmatan")
+        : (feeCut ? "Biaya Fee (hemat " + cut + "%)" : "Biaya Fee");
       if (discountRow) {
         discountRow.hidden = !discount;
-        discountRow.querySelector("strong").textContent = "-" + fmtRp(discount);
+        discountRow.querySelector("strong").textContent = "-" + fmtCustomerMoney(discount);
       }
-      if (costStrong[2]) costStrong[2].textContent = fmtRp(total);
+      if (costStrong[2]) costStrong[2].textContent = fmtCustomerMoney(total);
       if (amountLabel) amountLabel.firstChild.textContent = "Jumlah " + cur;
       if (orderBtn) {
         var min = cur === "IDR" ? MIN_ORDER.IDR : MIN_ORDER.USD;
@@ -328,6 +337,7 @@
     state.poKey = activeTab ? activeTab.getAttribute("data-po-key") || "" : "";
     if (amountInput) amountInput.addEventListener("input", recalc);
     if (currencySel) currencySel.addEventListener("change", recalc);
+    document.addEventListener("goisiinn:locale", recalc);
     recalc(); // replace pre-rendered numbers with the current fee/rate
     // Ambil fee & kurs terbaru dari pengaturan admin (fallback ke nilai default di atas).
     fetch(API_BASE + "settings", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (r) {
@@ -360,6 +370,7 @@
         (brandImg ? '<img alt="" width="320" height="160" src="' + brandImg.getAttribute("src") + '">' : "") +
         '</span></span><div class="checkout-product-copy"><h2 id="checkout-title"></h2><p></p><strong></strong></div></div>' +
         '<div class="checkout-total-card"><span>' + t("checkout_total") + '</span><strong></strong>' + ICON_SHIELD + "</div>" +
+        (locale() === "ms" ? '<p class="checkout-currency-note">Anggaran Ringgit menggunakan kadar Goisiinn. QRIS tetap menagih Rupiah dan aplikasi pembayaran Malaysia menukar jumlahnya secara automatik.</p>' : '') +
          '<form class="checkout-form" novalidate>' +
         '<label>' + t("name") + '<span class="checkout-input-wrap">' + ICON_USER + '<input name="customer_name" autocomplete="name" placeholder="' + t("full_name") + '" value="' + esc((saved && saved.name) || "") + '"></span></label>' +
          '<label>' + t("whatsapp") + '<span class="checkout-input-wrap">' + ICON_CHAT + '<input name="customer_phone" autocomplete="tel" inputmode="tel" placeholder="' + t("phone_placeholder") + '" value="' + esc((saved && saved.phone) || "") + '"></span></label>' +
@@ -370,13 +381,13 @@
         '<button class="checkout-submit-button" type="submit"><span>' + t("continue") + '</span></button></div></form></section>';
       overlay.querySelector("#checkout-title").textContent = serviceName;
       overlay.querySelector(".checkout-product-copy p").textContent = state.plan;
-      overlay.querySelector(".checkout-product-copy strong").textContent = t("unit_price") + ": " + fmtRp(priceIdr);
+      overlay.querySelector(".checkout-product-copy strong").textContent = t("unit_price") + ": " + fmtCustomerMoney(priceIdr);
       var quantityInput = overlay.querySelector('[name="quantity"]');
       var currentTotals = function () {
         var quantity = state.poKey ? 1 : Math.max(1, Math.min(100, parseInt(quantityInput.value, 10) || 1));
         var normal = Math.round(state.total * quantity);
         var sellerCut = seller && quantity >= 3 ? Math.round(normal * 0.08) : 0;
-        overlay.querySelector(".checkout-total-card strong").textContent = fmtRp(normal - sellerCut);
+        overlay.querySelector(".checkout-total-card strong").textContent = fmtCustomerMoney(normal - sellerCut);
         return { quantity: quantity, sellerDiscount: sellerCut, total: normal - sellerCut };
       };
       quantityInput.addEventListener("input", currentTotals);

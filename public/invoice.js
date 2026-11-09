@@ -18,7 +18,17 @@
   var fmtAmount = function (n, cur) {
     if (cur === "IDR") return fmtRp(n);
     var sym = { USD: "$", EUR: "\u20ac", GBP: "\u00a3", JPY: "\u00a5", CNY: "\u00a5", THB: "\u0e3f", MYR: "RM" }[cur] || cur + " ";
-    return sym + Number(n).toLocaleString("en-US", { minimumFractionDigits: Number.isInteger(Number(n)) ? 0 : 2, maximumFractionDigits: 2 });
+    var digits = cur === "MYR" ? 2 : (Number.isInteger(Number(n)) ? 0 : 2);
+    return sym + Number(n).toLocaleString(cur === "MYR" ? "ms-MY" : "en-US", { minimumFractionDigits: digits, maximumFractionDigits: 2 });
+  };
+  var fmtBill = function (idr, displayKey) {
+    if (order && order.display && order.display.currency === "MYR") {
+      var value = displayKey && order.display[displayKey] != null
+        ? Number(order.display[displayKey])
+        : Number(idr) / Number(order.display.rate || 1);
+      return fmtAmount(value, "MYR");
+    }
+    return fmtRp(idr);
   };
   var fmtExpiry = function (ts) {
     var d = new Date(ts);
@@ -58,7 +68,9 @@
 
   var detailHtml = function () {
     var nominal = order.plan && order.plan.toLowerCase() !== "custom" ? order.plan + " \u00b7 " : "";
-    nominal += fmtAmount(order.amount, order.currency) + (order.currency !== "IDR" ? " (\u2248 " + fmtRp(order.amount_idr) + ")" : "");
+    nominal += order.display && order.display.currency === "MYR"
+      ? fmtBill(order.amount_idr, "amount")
+      : fmtAmount(order.amount, order.currency) + (order.currency !== "IDR" ? " (\u2248 " + fmtRp(order.amount_idr) + ")" : "");
     var regularDiscount = Math.max(0, Number(order.discount || 0) - Number(order.seller_discount || 0));
     return '<div class="inv-wrap" style="padding:0"><article class="inv-card"><h2>' + t("order_detail") + '</h2><div class="inv-rows">' +
       "<div><span>" + t("name") + ":</span><b>" + esc(order.name) + "</b></div>" +
@@ -66,11 +78,11 @@
       "<div><span>" + t("service") + ":</span><b>" + esc(order.service) + "</b></div>" +
       (Number(order.quantity || 1) > 1 ? "<div><span>" + t("quantity") + ":</span><b>" + esc(order.quantity) + "</b></div>" : "") +
       "<div><span>" + t("nominal") + ":</span><b>" + esc(nominal) + "</b></div>" +
-      "<div><span>" + t("service_fee") + ":</span><b>" + fmtRp(order.fee) + "</b></div>" +
-      (regularDiscount > 0 ? "<div><span>" + t("discount") + ":</span><b>-" + fmtRp(regularDiscount) + "</b></div>" : "") +
-      (Number(order.seller_discount) > 0 ? "<div><span>" + t("seller_discount") + ":</span><b>-" + fmtRp(order.seller_discount) + "</b></div>" : "") +
+      "<div><span>" + t("service_fee") + ":</span><b>" + fmtBill(order.fee, "fee") + "</b></div>" +
+      (regularDiscount > 0 ? "<div><span>" + t("discount") + ":</span><b>-" + fmtBill(regularDiscount, "regular_discount") + "</b></div>" : "") +
+      (Number(order.seller_discount) > 0 ? "<div><span>" + t("seller_discount") + ":</span><b>-" + fmtBill(order.seller_discount, "seller_discount") + "</b></div>" : "") +
       '<div><span>' + t("status") + ':</span><b><span class="inv-pill is-' + esc(order.status) + '">' + esc(order.status_label) + "</span></b></div>" +
-      '<div class="is-total"><span>' + t("total_payment") + ':</span><b>' + fmtRp(order.total) + "</b></div>" +
+      '<div class="is-total"><span>' + t("total_payment") + ':</span><b>' + fmtBill(order.total, "total") + "</b></div>" +
       (order.po ? '<div><span>' + (locale() === "ms" ? "Peserta telah membayar" : "Peserta sudah membayar") + ':</span><b>' + esc(order.po.paid_count + '/' + order.po.target_size + ' peserta') + '</b></div>' : '') +
       "</div></article>" +
       (order.po ? (locale() === "ms"
@@ -89,8 +101,10 @@
       return '<img class="inv-qris-logo" src="/assets/payment-methods/qris.png" alt="QRIS">' +
         "<small>" + esc(order.qris.merchant || "QRIS Goisiinn") + "</small>" +
         '<div class="inv-qr">' + (order.payable ? '<img alt="QRIS Goisiinn" width="540" height="540" src="' + src + '">' : "") + "</div>" +
-        '<div class="inv-qr-amount">' + fmtRp(order.total) + "</div>" +
-        '<p class="inv-qr-note">' + (locale() === "ms" ? "Imbas dengan mana-mana aplikasi bank / e-wallet. Nilai pembayaran diisi secara automatik." : "Scan dengan aplikasi bank / e-wallet apa pun. Nominal sudah terisi otomatis, tinggal bayar.") + '</p>';
+        '<div class="inv-qr-amount">' + fmtBill(order.total, "total") + "</div>" +
+        '<p class="inv-qr-note">' + (locale() === "ms"
+          ? "QRIS menagih " + fmtRp(order.qris.amount_idr || order.total) + ". Aplikasi pembayaran Malaysia akan menukar dan mendebit Ringgit secara automatik; jumlah RM akhir mengikuti kadar penyedia pembayaran."
+          : "Scan dengan aplikasi bank / e-wallet apa pun. Nominal sudah terisi otomatis, tinggal bayar.") + '</p>';
     }
     var methodLabel = locale() === "ms" ? (m.type === "bank" ? "Nombor Akaun" : "Nombor " + m.name) : m.label;
     return '<img class="inv-qris-logo" src="' + esc(m.logo) + '" alt="' + esc(m.name) + '">' +
@@ -108,7 +122,7 @@
     }
     var cur = list.filter(function (m) { return m.code === active; })[0];
     var tabs = list.map(function (m) {
-      var tip = m.disabled && m.qris ? ' data-tip="' + (locale() === "ms" ? "QRIS tidak aktif untuk jumlah pembayaran melebihi " : "QRIS nonaktif untuk total pembayaran di atas ") + fmtRp(order.qris.max) + '"' : "";
+      var tip = m.disabled && m.qris ? ' data-tip="' + (locale() === "ms" ? "QRIS tidak aktif untuk jumlah pembayaran melebihi " + fmtBill(order.qris.max) : "QRIS nonaktif untuk total pembayaran di atas " + fmtRp(order.qris.max)) + '"' : "";
       return '<span class="inv-tip"' + tip + '><button class="inv-tab' + (m.code === active ? " is-active" : "") + '" type="button" data-method="' + esc(m.code) + '"' + (m.disabled ? " disabled" : "") + ' aria-label="' + esc(m.name) + '"><img src="' + esc(m.logo) + '" alt="' + esc(m.name) + '"></button></span>';
     }).join("");
     var locked = !order.payable;
@@ -118,7 +132,7 @@
     return '<article class="inv-card"><h2>' + t("payment_methods") + '</h2>' +
       (list.length ? '<div class="inv-tabs" aria-label="' + (locale() === "ms" ? "Pilih kaedah pembayaran" : "Pilih metode pembayaran") + '">' + tabs + "</div>" : "") +
       '<div class="inv-method' + (locked ? " is-locked" + (order.confirmed ? "" : " is-dead") : "") + '">' + methodBody(cur) + (locked ? '<span class="inv-badge">' + esc(badge) + "</span>" : "") + "</div>" +
-      '<div class="inv-total-bar"><span>' + t("total_payment") + '</span><strong>' + fmtRp(order.total) + "</strong></div>" +
+      '<div class="inv-total-bar"><span>' + t("total_payment") + '</span><strong>' + fmtBill(order.total, "total") + "</strong></div>" +
       (order.payable ? '<button class="inv-wa inv-chat-confirm" type="button" data-chat-confirm>' + ICON.chat + t("confirm_chat") + "</button>" : "") +
       (order.payable && order.expires_ts ? '<p class="inv-expiry">' + t("valid_until") + ' <b>' + esc(fmtExpiry(order.expires_ts)) + "</b></p>" : "") +
       "</article>";

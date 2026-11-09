@@ -98,6 +98,12 @@
     var sym = { USD: "$", EUR: "\u20ac", GBP: "\u00a3", JPY: "\u00a5", CNY: "\u00a5", THB: "\u0e3f", MYR: "RM" }[cur] || cur + " ";
     return sym + Number(n).toLocaleString("en-US", { minimumFractionDigits: Number.isInteger(Number(n)) ? 0 : 2, maximumFractionDigits: 2 });
   };
+  var fmtOrderMoney = function (o, idr) {
+    if (o && o.display_currency === "MYR" && Number(o.display_rate) > 0) {
+      return "RM " + (Number(idr) / Number(o.display_rate)).toLocaleString("ms-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    return fmtRp(idr);
+  };
   var parseDate = function (s) { return new Date(String(s).replace(" ", "T")); };
   var fmtTime = function (s) { var d = parseDate(s); return isNaN(d) ? "" : d.toLocaleTimeString(locale() === "ms" ? "ms-MY" : "id-ID", { hour: "2-digit", minute: "2-digit" }); };
   var dayLabel = function (s) {
@@ -118,11 +124,11 @@
     return '<div class="webchat-order"><div class="webchat-order-head">' + ICON.bag + "<span>" + t("order") + " #" + esc(o.code) + '</span><small><span class="webchat-pill is-' + esc(o.status) + '">' + (STATUS_LABEL[o.status] || esc(o.status)) + "</span></small></div>" +
       '<div class="webchat-order-rows"><div><span>' + t("service") + '</span><b>' + esc(o.service_name) + (o.plan ? " \u00b7 " + esc(o.plan) : "") + "</b></div>" +
       (Number(o.quantity || 1) > 1 ? "<div><span>" + t("quantity") + "</span><b>" + esc(o.quantity) + "</b></div>" : "") +
-      "<div><span>" + t("price") + "</span><b>" + fmtAmount(o.amount, o.currency) + (o.currency !== "IDR" ? " \u2248 " + fmtRp(o.amount_idr) : "") + "</b></div>" +
-      "<div><span>" + t("fee") + "</span><b>" + fmtRp(o.fee) + "</b></div>" +
-      (regularDiscount > 0 ? "<div><span>" + t("discount") + "</span><b>-" + fmtRp(regularDiscount) + "</b></div>" : "") +
-      (Number(o.seller_discount) > 0 ? "<div><span>" + t("seller_discount") + "</span><b>-" + fmtRp(o.seller_discount) + "</b></div>" : "") +
-      '<div class="is-total"><span>' + t("total") + "</span><b>" + fmtRp(o.total) + "</b></div>" +
+      "<div><span>" + t("price") + "</span><b>" + (o.display_currency === "MYR" ? fmtOrderMoney(o, o.amount_idr) : fmtAmount(o.amount, o.currency) + (o.currency !== "IDR" ? " \u2248 " + fmtRp(o.amount_idr) : "")) + "</b></div>" +
+      "<div><span>" + t("fee") + "</span><b>" + fmtOrderMoney(o, o.fee) + "</b></div>" +
+      (regularDiscount > 0 ? "<div><span>" + t("discount") + "</span><b>-" + fmtOrderMoney(o, regularDiscount) + "</b></div>" : "") +
+      (Number(o.seller_discount) > 0 ? "<div><span>" + t("seller_discount") + "</span><b>-" + fmtOrderMoney(o, o.seller_discount) + "</b></div>" : "") +
+      '<div class="is-total"><span>' + t("total") + "</span><b>" + fmtOrderMoney(o, o.total) + "</b></div>" +
        (inv ? '<a class="webchat-order-link" href="' + esc(inv) + '">' + t("view_invoice") + "</a>" : "") + "</div></div>";
   };
 

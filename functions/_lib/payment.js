@@ -5,6 +5,7 @@
 import { now, fmtLocal, parseLocal } from './core.js';
 import { qrisError, qrisMerchant } from './qris.js';
 import { normalizeLocale } from './i18n.js';
+import { displayCurrency as localeDisplayCurrency, displayRate as localeDisplayRate, idrToDisplay } from './currency.js';
 
 // baru = menunggu pembayaran; dibayar = sudah dikonfirmasi admin.
 export const ORDER_STATUSES = ['baru', 'dibayar', 'diproses', 'selesai', 'batal'];
@@ -77,6 +78,13 @@ export function qrisAvailable(settings, total) {
 /** Data publik untuk halaman invoice (tanpa nomor WhatsApp pelanggan). */
 export function invoiceView(order, settings) {
   const locale = normalizeLocale(order.locale);
+  const customerCurrency = localeDisplayCurrency(locale);
+  const storedDisplayRate = Number(order.display_rate);
+  const customerRate = customerCurrency === 'MYR' && storedDisplayRate > 1
+    ? storedDisplayRate
+    : localeDisplayRate(settings, locale);
+  const discount = Number(order.discount) || 0;
+  const sellerDiscount = Number(order.seller_discount) || 0;
   const expired = isExpired(order);
   const confirmed = PAID_STATUSES.includes(order.status);
   const payable = order.status === 'baru' && !expired;
@@ -94,9 +102,20 @@ export function invoiceView(order, settings) {
     amount_idr: Number(order.amount_idr),
     unit_amount_idr: Number(order.unit_amount_idr ?? order.amount_idr),
     fee: Number(order.fee),
-    discount: Number(order.discount) || 0,
-    seller_discount: Number(order.seller_discount) || 0,
+    discount,
+    seller_discount: sellerDiscount,
     total: Number(order.total),
+    display: {
+      currency: customerCurrency,
+      rate: customerRate,
+      amount: idrToDisplay(order.amount_idr, customerCurrency, customerRate),
+      unit_amount: idrToDisplay(order.unit_amount_idr ?? order.amount_idr, customerCurrency, customerRate),
+      fee: idrToDisplay(order.fee, customerCurrency, customerRate),
+      discount: idrToDisplay(discount, customerCurrency, customerRate),
+      regular_discount: idrToDisplay(Math.max(0, discount - sellerDiscount), customerCurrency, customerRate),
+      seller_discount: idrToDisplay(sellerDiscount, customerCurrency, customerRate),
+      total: idrToDisplay(order.total, customerCurrency, customerRate),
+    },
     status: expired ? 'kedaluwarsa' : order.status,
     status_label: expired ? (locale === 'ms' ? 'Tamat Tempoh' : 'Kedaluwarsa') : statusLabel(order.status, locale),
     confirmed,
@@ -111,6 +130,7 @@ export function invoiceView(order, settings) {
       available: qrisAvailable(settings, order.total),
       merchant: qrisMerchant(settings.qris_payload),
       max,
+      amount_idr: Number(order.total),
     } : null,
     accounts: parseAccounts(settings.payment_accounts),
     product_key: order.product_key || '',

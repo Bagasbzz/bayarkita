@@ -15,6 +15,7 @@ import { invoiceExpiry } from '../_lib/payment.js';
 import { getSeatProduct, getPoProduct, discountIdr, isPremiumPlan } from '../_lib/seat-products.js';
 import { normalizeLocale, tr } from '../_lib/i18n.js';
 import { sellerDiscount, SELLER_DISCOUNT_PCT, SELLER_MIN_QUANTITY, MAX_ORDER_QUANTITY } from '../_lib/seller.js';
+import { displayCurrency, displayRate, fmtDisplayIdr, idrToDisplay } from '../_lib/currency.js';
 
 export async function onRequest(context) {
   const { data, env } = context;
@@ -45,6 +46,8 @@ export async function onRequest(context) {
   if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_ORDER_QUANTITY) fail(`Jumlah produk harus 1-${MAX_ORDER_QUANTITY}.`);
 
   const s = await settingsAll(db);
+  const customerDisplayCurrency = displayCurrency(locale);
+  const customerDisplayRate = displayRate(s, locale);
   const seatProduct = getSeatProduct(productKey);
   const poProduct = getPoProduct(poKey);
   if (productKey && !seatProduct) fail('Paket seat tidak valid.');
@@ -105,8 +108,8 @@ export async function onRequest(context) {
   const ts = now();
   const expiresAt = invoiceExpiry(s);
   const res = await db.prepare(
-    'INSERT INTO orders (code, conversation_id, service_slug, service_name, plan, amount, currency, rate, amount_idr, fee, total, status, customer_name, phone, created_at, updated_at, expires_at, customer_email, product_key, po_group_id, discount, quantity, unit_amount, unit_amount_idr, seller_discount, locale) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
-  ).bind(code, convId, serviceSlug, serviceName, plan, invoiceAmount, invoiceCurrency, orderRate, orderAmountIdr, orderFee, orderTotal, 'baru', name, phone, ts, ts, expiresAt, emailProduct ? customerEmail : null, seatProduct ? productKey : poProduct ? poKey : null, null, orderDiscount, quantity, invoiceUnitAmount, unitAmountIdr, sellerCut, locale).run();
+    'INSERT INTO orders (code, conversation_id, service_slug, service_name, plan, amount, currency, rate, amount_idr, fee, total, status, customer_name, phone, created_at, updated_at, expires_at, customer_email, product_key, po_group_id, discount, quantity, unit_amount, unit_amount_idr, seller_discount, locale, display_currency, display_rate) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+  ).bind(code, convId, serviceSlug, serviceName, plan, invoiceAmount, invoiceCurrency, orderRate, orderAmountIdr, orderFee, orderTotal, 'baru', name, phone, ts, ts, expiresAt, emailProduct ? customerEmail : null, seatProduct ? productKey : poProduct ? poKey : null, null, orderDiscount, quantity, invoiceUnitAmount, unitAmountIdr, sellerCut, locale, customerDisplayCurrency, customerDisplayRate).run();
   const orderId = Number(res.meta.last_row_id);
   let poGroup = null;
   if (poProduct) {
@@ -131,12 +134,13 @@ export async function onRequest(context) {
   const redirectUrl = `/inv/${code}`;
 
   const summary = locale === 'ms'
-    ? `Pesanan baharu #${code}\nPerkhidmatan: ${serviceName}${plan ? ` - ${plan}` : ''}\nKuantiti: ${quantity}\nHarga: ${fmtAmount(invoiceAmount, invoiceCurrency)}${invoiceCurrency !== 'IDR' ? ' ≈ ' + fmtRp(orderAmountIdr) : ''}\nCaj perkhidmatan: ${fmtRp(orderFee)}\n${orderDiscount ? `Diskaun: -${fmtRp(orderDiscount)}\n` : ''}Jumlah: ${fmtRp(orderTotal)}\n${poGroup ? 'Kumpulan kongsi telah dibuka/disertai. Maklumat peserta hanya dipaparkan pada invois selepas pembayaran anda disahkan.\n' : ''}Invois: ${redirectUrl}`
+    ? `Pesanan baharu #${code}\nPerkhidmatan: ${serviceName}${plan ? ` - ${plan}` : ''}\nKuantiti: ${quantity}\nHarga: ${fmtDisplayIdr(orderAmountIdr, customerDisplayCurrency, customerDisplayRate)}\nCaj perkhidmatan: ${fmtDisplayIdr(orderFee, customerDisplayCurrency, customerDisplayRate)}\n${orderDiscount ? `Diskaun: -${fmtDisplayIdr(orderDiscount, customerDisplayCurrency, customerDisplayRate)}\n` : ''}Jumlah: ${fmtDisplayIdr(orderTotal, customerDisplayCurrency, customerDisplayRate)}\nQRIS menagih ${fmtRp(orderTotal)} dan aplikasi pembayaran Malaysia menukarnya kepada Ringgit secara automatik.\n${poGroup ? 'Kumpulan kongsi telah dibuka/disertai. Maklumat peserta hanya dipaparkan pada invois selepas pembayaran anda disahkan.\n' : ''}Invois: ${redirectUrl}`
     : `Pesanan baru #${code}\nLayanan: ${serviceName}${plan ? ` - ${plan}` : ''}\nJumlah produk: ${quantity}\nHarga: ${fmtAmount(invoiceAmount, invoiceCurrency)}${invoiceCurrency !== 'IDR' ? ' ≈ ' + fmtRp(orderAmountIdr) : ''}\nBiaya fee: ${fmtRp(orderFee)}\n${orderDiscount ? `Diskon: -${fmtRp(orderDiscount)}\n` : ''}Total: ${fmtRp(orderTotal)}\n${poGroup ? 'Grup patungan dibuka/diikuti. Info peserta dan progres hanya tampil di invoice setelah pembayaran Anda dikonfirmasi.\n' : ''}Invoice: ${redirectUrl}`;
   await addMessage(db, convId, 'system', summary, {
     type: 'order', order_id: orderId, code, status: 'baru',
     service_name: serviceName, plan, amount: invoiceAmount, unit_amount: invoiceUnitAmount, quantity, currency: invoiceCurrency,
     amount_idr: orderAmountIdr, unit_amount_idr: unitAmountIdr, fee: orderFee, discount: orderDiscount, seller_discount: sellerCut, total: orderTotal, invoice_url: redirectUrl,
+    display_currency: customerDisplayCurrency, display_rate: customerDisplayRate,
     product_key: seatProduct ? productKey : poProduct ? poKey : undefined,
   });
   if (s.order_auto_reply) await addMessage(db, convId, 'system', locale === 'id' ? s.order_auto_reply : tr(locale, 'order_auto_reply'));
@@ -146,6 +150,10 @@ export async function onRequest(context) {
   return ok({
     token: conv.token, redirectUrl, account_type: conv.account_type || 'customer', locale,
     seller: { discount_pct: SELLER_DISCOUNT_PCT, min_quantity: SELLER_MIN_QUANTITY, discount: sellerCut },
-    order: { id: orderId, code, quantity, total: orderTotal, fee: orderFee, discount: orderDiscount, expires_at: expiresAt },
+    order: {
+      id: orderId, code, quantity, total: orderTotal, fee: orderFee, discount: orderDiscount, expires_at: expiresAt,
+      display_currency: customerDisplayCurrency, display_rate: customerDisplayRate,
+      display_total: idrToDisplay(orderTotal, customerDisplayCurrency, customerDisplayRate),
+    },
   });
 }

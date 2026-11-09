@@ -87,7 +87,9 @@ CREATE TABLE IF NOT EXISTS orders (
   unit_amount     REAL,                           -- nominal satu produk dalam currency
   unit_amount_idr REAL,                           -- nilai satu produk dalam rupiah
   seller_discount REAL NOT NULL DEFAULT 0,
-  locale          TEXT NOT NULL DEFAULT 'id'
+  locale          TEXT NOT NULL DEFAULT 'id',
+  display_currency TEXT NOT NULL DEFAULT 'IDR',   -- IDR | MYR; hanya untuk tampilan pelanggan
+  display_rate    REAL NOT NULL DEFAULT 1         -- IDR per 1 unit mata uang tampilan
 );
 
 CREATE TABLE IF NOT EXISTS po_groups (
