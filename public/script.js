@@ -199,7 +199,7 @@
     if (optionGrid && (serviceSlug === "claude" || serviceSlug === "chatgpt")) {
       var seatButtons = serviceSlug === "claude"
         ? '<button data-amount="257000" data-currency="IDR" data-custom="false" data-product-key="claude-team-standard" data-plan="Claude Team Standard Seat" aria-selected="false" role="tab" type="button">Team Standard Seat</button><button data-amount="812000" data-currency="IDR" data-custom="false" data-product-key="claude-team-premium" data-plan="Claude Team Premium Seat" aria-selected="false" role="tab" type="button">Team Premium Seat</button><button data-amount="5.55" data-currency="USD" data-custom="false" data-po-key="claude-pro-po-4" data-plan="Patungan Claude Pro (1/4)" aria-selected="false" role="tab" type="button">Patungan Claude Pro (1/4)</button>'
-        : '<button data-amount="58000" data-currency="IDR" data-custom="false" data-product-key="chatgpt-business-standard" data-plan="ChatGPT Business Standard Seat" aria-selected="false" role="tab" type="button">Business Standard Seat</button><button data-amount="316000" data-currency="IDR" data-custom="false" data-product-key="chatgpt-business-premium" data-plan="ChatGPT Business Premium Seat" aria-selected="false" role="tab" type="button">Business Premium Seat</button><button data-amount="87250" data-currency="IDR" data-custom="false" data-po-key="chatgpt-plus-po-4" data-plan="Patungan ChatGPT Plus (1/4)" aria-selected="false" role="tab" type="button">Patungan ChatGPT Plus (1/4)</button>';
+        : '<button data-amount="73000" data-currency="IDR" data-custom="false" data-product-key="chatgpt-business-standard" data-plan="ChatGPT Business Standard Seat" aria-selected="false" role="tab" type="button">Business Standard Seat</button><button data-amount="316000" data-currency="IDR" data-custom="false" data-product-key="chatgpt-business-premium" data-plan="ChatGPT Business Premium Seat" aria-selected="false" role="tab" type="button">Business Premium Seat</button><button data-amount="87250" data-currency="IDR" data-custom="false" data-po-key="chatgpt-plus-po-4" data-plan="Patungan ChatGPT Plus (1/4)" aria-selected="false" role="tab" type="button">Patungan ChatGPT Plus (1/4)</button>';
       var customTab = optionGrid.querySelector('[data-custom="true"]');
       if (customTab) {
         customTab.insertAdjacentHTML("beforebegin", seatButtons);
@@ -214,14 +214,24 @@
     var costStrong = orderCard.querySelectorAll(".service-cost-summary strong");
     var orderBtn = orderCard.querySelector(".service-order-button");
     var brandImg = orderCard.querySelector(".service-order-brand-icon img");
-    // Potongan harga (USD) khusus paket tetap > $20; harus sama dengan DISCOUNT_USD/DISCOUNT_MIN_USD di server.
-    // Paket lain (termasuk Custom) mendapat potongan fee FEE.cut_pct; seat tetap Rp0, patungan tetap Rp5.000.
-    var DISCOUNT_USD = { chatgpt: 2.12, claude: 3.56 }[serviceSlug] || 0;
+    // Diskon paket tetap harus sama dengan fungsi discountUsdForPlan di server.
+    // Diskon Claude Pro dibagi empat untuk satu slot patungan.
     var DISCOUNT_MIN_USD = 20;
     var tabLabel = function (t) { return t.getAttribute("data-plan") || t.textContent.trim(); };
     var activeTabEl = function () { return tabs.filter(function (x) { return x.classList.contains("is-active"); })[0]; };
+    var discountUsdForTab = function (t) {
+      if (!t || t.getAttribute("data-custom") === "true") return 0;
+      if (serviceSlug === "chatgpt") return 2.12;
+      if (serviceSlug !== "claude") return 0;
+      if (t.getAttribute("data-po-key") === "claude-pro-po-4") return 4.79 / 4;
+      var plan = tabLabel(t);
+      if (plan === "Pro") return 4.79;
+      if (plan === "Max 5X") return 9.12;
+      return 3.56;
+    };
     var tabIsPremium = function (t) {
-      if (!DISCOUNT_USD || !t || t.getAttribute("data-custom") === "true") return false;
+      if (!discountUsdForTab(t)) return false;
+      if (t.getAttribute("data-po-key") === "claude-pro-po-4") return true;
       var idr = (parseFloat(t.getAttribute("data-amount")) || 0) * rateFor(t.getAttribute("data-currency") || "IDR");
       return RATES.USD > 0 && idr / RATES.USD > DISCOUNT_MIN_USD;
     };
@@ -233,17 +243,17 @@
         if (badge) badge.hidden = !tabIsPremium(t);
       });
     };
-    if (DISCOUNT_USD) {
-      var discText = "-$" + DISCOUNT_USD.toFixed(2).replace(".", ",");
+    if (serviceSlug === "chatgpt" || serviceSlug === "claude") {
       tabs.forEach(function (t) {
         if (t.getAttribute("data-custom") === "true") return;
         if (!t.getAttribute("data-plan")) t.setAttribute("data-plan", t.textContent.trim());
+        var discText = "-$" + discountUsdForTab(t).toFixed(2).replace(".", ",");
         t.insertAdjacentHTML("beforeend", '<span class="service-discount-badge" hidden>' + discText + "</span>");
       });
       var summary = orderCard.querySelector(".service-cost-summary");
       var totalRow = summary && summary.lastElementChild;
       if (totalRow) {
-        totalRow.insertAdjacentHTML("beforebegin", '<div class="service-discount-row" hidden><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg><span>Diskon (' + discText + ')</span><strong></strong></div>');
+        totalRow.insertAdjacentHTML("beforebegin", '<div class="service-discount-row" hidden><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg><span>Diskon</span><strong></strong></div>');
         discountRow = summary.querySelector(".service-discount-row");
       }
     }
@@ -288,19 +298,22 @@
       // Nilai final selalu dihitung ulang di server.
       var premium = tabIsPremium(activeTabEl());
       refreshBadges();
-      var cut = Math.min(Math.max(Number(FEE.cut_pct) || 0, 0), 100);
-      var feeCut = !state.productKey && !state.poKey && !premium && cut > 0;
-      if (feeCut) fee = Math.round(Math.round(fee) * (100 - cut) / 100);
-      var discount = premium ? Math.min(Math.round(DISCOUNT_USD * RATES.USD), Math.round(priceIdr)) : 0;
+      var threshold = Math.max(0, Number(FEE.cut_threshold) || 0);
+      var cut = Math.max(0, Number(FEE.cut_flat) || 0);
+      var feeCut = Math.round(fee) > threshold && cut > 0;
+      if (feeCut) fee = Math.max(0, Math.round(fee) - cut);
+      var discountUsd = discountUsdForTab(activeTabEl());
+      var discount = premium ? Math.min(Math.round(discountUsd * RATES.USD), Math.round(priceIdr)) : 0;
       var total = priceIdr + fee - discount;
       state = { amount: amount, currency: cur, fee: fee, discount: discount, total: total, plan: state.plan, productKey: state.productKey, poKey: state.poKey };
       if (costStrong[0]) costStrong[0].textContent = locale() === "ms" ? fmtCustomerMoney(priceIdr) : fmtPrice(amount, cur);
       if (costStrong[1]) costStrong[1].textContent = fmtCustomerMoney(fee);
       if (feeLabel) feeLabel.textContent = locale() === "ms"
-        ? (feeCut ? "Caj Perkhidmatan (jimat " + cut + "%)" : "Caj Perkhidmatan")
-        : (feeCut ? "Biaya Fee (hemat " + cut + "%)" : "Biaya Fee");
+        ? (feeCut ? "Caj Perkhidmatan (jimat " + fmtCustomerMoney(cut) + ")" : "Caj Perkhidmatan")
+        : (feeCut ? "Biaya Fee (hemat " + fmtCustomerMoney(cut) + ")" : "Biaya Fee");
       if (discountRow) {
         discountRow.hidden = !discount;
+        discountRow.querySelector("span").textContent = "Diskon (-$" + discountUsd.toFixed(2).replace(".", ",") + ")";
         discountRow.querySelector("strong").textContent = "-" + fmtCustomerMoney(discount);
       }
       if (costStrong[2]) costStrong[2].textContent = fmtCustomerMoney(total);

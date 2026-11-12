@@ -32,7 +32,7 @@ for (const file of files('public')) {
     const resolved = path.resolve(target.startsWith('/') || source.includes('<base href="/">') ? 'public' : path.dirname(file), target.replace(/^\//, ''));
     assert.ok(fs.existsSync(resolved), `Broken resource ${ref} in ${file}`);
     if (/\.(?:svg|css|js)$/.test(target)) assets.add('/' + path.relative('public', resolved).replaceAll('\\', '/') + (ref.includes('?') ? '?' + ref.split('?')[1] : ''));
-    if (/\.(?:css|js)$/.test(target)) assert.match(ref, /\?v=20261109a$/, `Stale script/style version in ${file}`);
+    if (/\.(?:css|js)$/.test(target)) assert.match(ref, /\?v=20261112a$/, `Stale script/style version in ${file}`);
   }
   if (!/[\\/](?:admin|inv)[\\/]/.test(file)) {
     const relative = path.relative('public', file).replaceAll('\\', '/');

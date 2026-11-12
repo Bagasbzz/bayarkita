@@ -3,7 +3,7 @@
 export const SEAT_PRODUCTS = {
   'claude-team-standard': { service_slug: 'claude', service_name: 'Claude', plan: 'Claude Team Standard Seat', amount: 257000 },
   'claude-team-premium': { service_slug: 'claude', service_name: 'Claude', plan: 'Claude Team Premium Seat', amount: 812000 },
-  'chatgpt-business-standard': { service_slug: 'chatgpt', service_name: 'ChatGPT', plan: 'ChatGPT Business Standard Seat', amount: 58000 },
+  'chatgpt-business-standard': { service_slug: 'chatgpt', service_name: 'ChatGPT', plan: 'ChatGPT Business Standard Seat', amount: 73000 },
   'chatgpt-business-premium': { service_slug: 'chatgpt', service_name: 'ChatGPT', plan: 'ChatGPT Business Premium Seat', amount: 316000 },
 };
 
@@ -19,22 +19,34 @@ export function getSeatProduct(key) {
   return Object.hasOwn(SEAT_PRODUCTS, String(key || '')) ? SEAT_PRODUCTS[key] : null;
 }
 
-// Potongan harga per layanan (USD), hanya untuk paket tetap (preset, seat, patungan)
-// yang harganya lebih dari DISCOUNT_MIN_USD. Paket ini tidak mendapat potongan fee %.
-// Nominal Custom tidak didiskon. Dikonversi ke rupiah dengan kurs USD.
+// Potongan harga USD hanya untuk paket tetap; nominal Custom tidak didiskon.
+// Claude Pro juga dipakai sebagai dasar patungan, sehingga diskonnya dibagi empat
+// agar jumlah potongan untuk satu grup sama dengan satu paket Claude Pro.
 export const DISCOUNT_USD = { chatgpt: 2.12, claude: 3.56 };
+export const CLAUDE_PLAN_DISCOUNT_USD = { Pro: 4.79, 'Max 5X': 9.12 };
 export const DISCOUNT_MIN_USD = 20;
 
-export function discountIdr(slug, s) {
-  const usd = Object.hasOwn(DISCOUNT_USD, String(slug || '')) ? DISCOUNT_USD[slug] : 0;
+export function discountUsdForPlan(slug, plan) {
+  slug = String(slug || '');
+  plan = String(plan || '');
+  if (slug === 'claude') {
+    if (plan === 'Patungan Claude Pro (1/4)') return CLAUDE_PLAN_DISCOUNT_USD.Pro / 4;
+    return CLAUDE_PLAN_DISCOUNT_USD[plan] || DISCOUNT_USD.claude;
+  }
+  return Object.hasOwn(DISCOUNT_USD, slug) ? DISCOUNT_USD[slug] : 0;
+}
+
+export function discountIdr(slug, plan, s) {
+  const usd = discountUsdForPlan(slug, plan);
   const rate = Number(s.rate_USD);
   return usd > 0 && rate > 0 ? Math.round(usd * rate) : 0;
 }
 
-/** True bila paket tetap ini termasuk "paket mahal" (> $20) yang berhak diskon dolar. */
-export function isPremiumPlan(slug, amountIdr, s) {
+/** True bila paket tetap ini berhak diskon dolar. */
+export function isPremiumPlan(slug, plan, amountIdr, s) {
   const rate = Number(s.rate_USD);
-  return discountIdr(slug, s) > 0 && rate > 0 && amountIdr / rate > DISCOUNT_MIN_USD;
+  if (String(plan || '') === 'Patungan Claude Pro (1/4)') return discountIdr(slug, plan, s) > 0;
+  return discountIdr(slug, plan, s) > 0 && rate > 0 && amountIdr / rate > DISCOUNT_MIN_USD;
 }
 
 export function getPoProduct(key) {

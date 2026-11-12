@@ -1,18 +1,32 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
-import { normalizePhone, supportedPhone } from '../functions/_lib/core.js';
+import { defaultServices, defaultSettings, feeAfterPromo, normalizePhone, supportedPhone } from '../functions/_lib/core.js';
 import { detectLocale, normalizeLocale } from '../functions/_lib/i18n.js';
 import { sellerDiscount, SELLER_DISCOUNT_PCT, SELLER_MIN_QUANTITY } from '../functions/_lib/seller.js';
 import { greetingFor } from '../functions/_lib/ai.js';
 import { displayCurrency, displayRate, idrToDisplay, fmtDisplayIdr } from '../functions/_lib/currency.js';
 import { invoiceView } from '../functions/_lib/payment.js';
+import { getSeatProduct, discountUsdForPlan, discountIdr, isPremiumPlan } from '../functions/_lib/seat-products.js';
 
 assert.equal(SELLER_DISCOUNT_PCT, 8);
 assert.equal(SELLER_MIN_QUANTITY, 3);
 assert.equal(sellerDiscount('seller', 3, 100_000), 24_000);
 assert.equal(sellerDiscount('seller', 2, 100_000), 0);
 assert.equal(sellerDiscount('customer', 10, 100_000), 0);
+
+const pricingSettings = defaultSettings();
+assert.equal(getSeatProduct('chatgpt-business-standard').amount, 73_000);
+assert.equal(defaultServices().find((service) => service.slug === 'claude').presets.find((preset) => preset.label === 'Max 5X').amount, 102);
+assert.equal(feeAfterPromo(pricingSettings, 25_000), 25_000);
+assert.equal(feeAfterPromo(pricingSettings, 25_001), 18_001);
+assert.equal(feeAfterPromo(pricingSettings, 36_000), 29_000);
+assert.equal(discountUsdForPlan('claude', 'Pro'), 4.79);
+assert.equal(discountUsdForPlan('claude', 'Max 5X'), 9.12);
+assert.equal(discountUsdForPlan('claude', 'Patungan Claude Pro (1/4)'), 4.79 / 4);
+assert.equal(discountIdr('claude', 'Pro', pricingSettings), 89_094);
+assert.equal(discountIdr('claude', 'Patungan Claude Pro (1/4)', pricingSettings), 22_274);
+assert.ok(isPremiumPlan('claude', 'Patungan Claude Pro (1/4)', 5.55 * 18_600, pricingSettings));
 
 assert.equal(normalizePhone('0812-3456-7890', 'id'), '6281234567890');
 assert.equal(normalizePhone('812 3456 7890', 'id'), '6281234567890');
@@ -55,6 +69,7 @@ db.prepare('INSERT INTO settings VALUES (?, ?)').run('rate_MYR', '4500');
 db.exec(fs.readFileSync('migrations/011_seller_locale.sql', 'utf8'));
 db.prepare("INSERT INTO orders (id, locale) VALUES (1, 'ms')").run();
 db.exec(fs.readFileSync('migrations/012_malaysia_ringgit_display.sql', 'utf8'));
+db.exec(fs.readFileSync('migrations/013_pricing_fee_promo.sql', 'utf8'));
 const convColumns = new Set(db.prepare('PRAGMA table_info(conversations)').all().map((row) => row.name));
 const orderColumns = new Set(db.prepare('PRAGMA table_info(orders)').all().map((row) => row.name));
 for (const name of ['account_type', 'locale']) assert.ok(convColumns.has(name), `Missing conversations.${name}`);
@@ -62,5 +77,7 @@ for (const name of ['quantity', 'unit_amount', 'unit_amount_idr', 'seller_discou
 const migratedOrder = db.prepare('SELECT display_currency, display_rate FROM orders WHERE id = 1').get();
 assert.equal(migratedOrder.display_currency, 'MYR');
 assert.equal(migratedOrder.display_rate, 4500);
+assert.equal(db.prepare("SELECT svalue FROM settings WHERE skey = 'fee_cut_threshold'").get().svalue, '25000');
+assert.equal(db.prepare("SELECT svalue FROM settings WHERE skey = 'fee_cut_flat'").get().svalue, '7000');
 
-console.log('seller-locale: diskon, nomor ID/MY, deteksi bahasa, sapaan AI, dan migrasi lulus');
+console.log('seller-locale: diskon, promo fee, nomor ID/MY, deteksi bahasa, sapaan AI, dan migrasi lulus');

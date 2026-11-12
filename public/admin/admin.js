@@ -586,10 +586,10 @@
     var feeIdr = v("fee_idr_base") + idr * v("fee_idr_pct") / 100;
     var feeUsd = usd < v("fee_usd_min_threshold") ? v("fee_usd_min") : v("fee_usd_base") + usd * rate * v("fee_usd_pct") / 100;
     var feeSmall = usdSmall < v("fee_usd_min_threshold") ? v("fee_usd_min") : v("fee_usd_base") + usdSmall * rate * v("fee_usd_pct") / 100;
-    var cut = Math.min(Math.max(v("fee_cut_pct"), 0), 100);
-    var c = function (f) { return Math.round(Math.round(f) * (100 - cut) / 100); };
+    var threshold = Math.max(v("fee_cut_threshold"), 0), cut = Math.max(v("fee_cut_flat"), 0);
+    var c = function (f) { f = Math.round(f); return f > threshold && cut > 0 ? Math.max(0, f - cut) : f; };
     feeIdr = c(feeIdr); feeUsd = c(feeUsd); feeSmall = c(feeSmall);
-    $("fee-preview").innerHTML = "Contoh (sudah dipotong promo " + cut + "%; paket ChatGPT/Claude > $20 pakai fee normal + diskon dolar): Rp 500.000 → fee <b>" + fmtRp(feeIdr) + "</b>, total " + fmtRp(idr + feeIdr) + "<br>$20 (kurs " + rate.toLocaleString("id-ID") + ") → fee <b>" + fmtRp(feeUsd) + "</b>, total " + fmtRp(usd * rate + feeUsd) + "<br>$2 → fee <b>" + fmtRp(feeSmall) + "</b>, total " + fmtRp(usdSmall * rate + feeSmall);
+    $("fee-preview").innerHTML = "Contoh (fee di atas " + fmtRp(threshold) + " dipotong " + fmtRp(cut) + "; paket ChatGPT/Claude tetap dapat diskon dolar sesuai paket): Rp 500.000 → fee <b>" + fmtRp(feeIdr) + "</b>, total " + fmtRp(idr + feeIdr) + "<br>$20 (kurs " + rate.toLocaleString("id-ID") + ") → fee <b>" + fmtRp(feeUsd) + "</b>, total " + fmtRp(usd * rate + feeUsd) + "<br>$2 → fee <b>" + fmtRp(feeSmall) + "</b>, total " + fmtRp(usdSmall * rate + feeSmall);
   };
   feeForm.addEventListener("input", feePreview);
   rateForm.addEventListener("input", feePreview);

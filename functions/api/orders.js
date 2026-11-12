@@ -6,13 +6,13 @@
  *      mengembalikan redirectUrl ke halaman invoice /inv/{kode}.
  */
 import {
-  ok, fail, param, strParam, now, fmtLocal, normalizePhone, supportedPhone, settingsAll, calcOrder, fmtRp, fmtAmount, parseJsonArr,
+  ok, fail, param, strParam, now, fmtLocal, normalizePhone, supportedPhone, settingsAll, calcOrder, feeAfterPromo, fmtRp, fmtAmount, parseJsonArr,
   conversationByToken, createConversation, addMessage,
 } from '../_lib/core.js';
 import { randomHex } from '../_lib/password.js';
 import { pickAgent, scheduleAiReply } from '../_lib/ai.js';
 import { invoiceExpiry } from '../_lib/payment.js';
-import { getSeatProduct, getPoProduct, discountIdr, isPremiumPlan } from '../_lib/seat-products.js';
+import { getSeatProduct, getPoProduct, discountUsdForPlan, discountIdr, isPremiumPlan } from '../_lib/seat-products.js';
 import { normalizeLocale, tr } from '../_lib/i18n.js';
 import { sellerDiscount, SELLER_DISCOUNT_PCT, SELLER_MIN_QUANTITY, MAX_ORDER_QUANTITY } from '../_lib/seller.js';
 import { displayCurrency, displayRate, fmtDisplayIdr, idrToDisplay } from '../_lib/currency.js';
@@ -72,16 +72,16 @@ export async function onRequest(context) {
   // Paket tetap = seat, patungan, atau preset non-Custom yang cocok persis dengan
   // katalog layanan di database. Nilai dari browser tidak dipercaya.
   let isFixedPlan = !!fixedProduct;
-  if (!isFixedPlan && discountIdr(serviceSlug, s) > 0) {
+  if (!isFixedPlan && discountUsdForPlan(serviceSlug, plan) > 0) {
     const svc = await db.prepare('SELECT presets FROM services WHERE slug = ? AND active = 1').bind(serviceSlug).first();
     isFixedPlan = !!svc && parseJsonArr(svc.presets).some((p) => !p.custom && p.label === plan && Number(p.amount) === amount && String(p.currency).toUpperCase() === currency);
   }
-  // Paket mahal (> $20) ChatGPT/Claude: fee normal + diskon dolar.
-  // Selain itu: fee dipotong fee_cut_pct (seat tetap Rp0, patungan tetap Rp5.000).
-  const premium = isFixedPlan && isPremiumPlan(serviceSlug, unitAmountIdr, s);
-  const cutPct = Math.min(Math.max(Number(s.fee_cut_pct) || 0, 0), 100);
-  const unitFee = seatProduct ? 0 : poProduct ? 5000 : premium ? calc.fee : Math.round(calc.fee * (100 - cutPct) / 100);
-  const unitDiscount = premium ? Math.min(discountIdr(serviceSlug, s), Math.round(unitAmountIdr)) : 0;
+  // Paket tetap ChatGPT/Claude mendapat diskon dolar sesuai plan. Promo fee berlaku
+  // untuk semua fee yang melampaui ambang; seat tidak berfee dan patungan fee Rp5.000.
+  const premium = isFixedPlan && isPremiumPlan(serviceSlug, plan, unitAmountIdr, s);
+  const baseUnitFee = seatProduct ? 0 : poProduct ? 5000 : calc.fee;
+  const unitFee = feeAfterPromo(s, baseUnitFee);
+  const unitDiscount = premium ? Math.min(discountIdr(serviceSlug, plan, s), Math.round(unitAmountIdr)) : 0;
   const unitTotal = Math.round(unitAmountIdr + unitFee - unitDiscount);
   const sellerCut = sellerDiscount(conv?.account_type, quantity, unitTotal);
   const orderAmountIdr = Math.round(unitAmountIdr * quantity * 100) / 100;

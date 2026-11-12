@@ -25,6 +25,8 @@
     "db:seller": "wrangler d1 execute bayarkita --remote --file=./migrations/011_seller_locale.sql",
     "db:ringgit:local": "wrangler d1 execute bayarkita --local --file=./migrations/012_malaysia_ringgit_display.sql",
     "db:ringgit": "wrangler d1 execute bayarkita --remote --file=./migrations/012_malaysia_ringgit_display.sql",
+    "db:pricing:local": "wrangler d1 execute bayarkita --local --file=./migrations/013_pricing_fee_promo.sql",
+    "db:pricing": "wrangler d1 execute bayarkita --remote --file=./migrations/013_pricing_fee_promo.sql",
     "deploy": "wrangler pages deploy public --project-name bayarkita",
     "test": "node scripts/test-qris.mjs && node scripts/test-articles.mjs && node scripts/test-brand.mjs && node scripts/test-seller-locale.mjs"
   },

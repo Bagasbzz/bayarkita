@@ -98,8 +98,8 @@ export function defaultSettings() {
   return {
     fee_idr_base: 20000, fee_idr_pct: 4.5,
     fee_usd_min: 20000, fee_usd_min_threshold: 3, fee_usd_base: 28000, fee_usd_pct: 1,
-    // Potongan fee (%) untuk semua pesanan, kecuali paket mahal yang sudah dapat diskon dolar.
-    fee_cut_pct: 10,
+    // Promo fee: biaya yang melewati ambang dipotong nominal tetap.
+    fee_cut_threshold: 25000, fee_cut_flat: 7000,
     rate_USD: 18600, rate_EUR: 21500, rate_GBP: 24800, rate_JPY: 125, rate_CNY: 2600, rate_THB: 570, rate_MYR: 4400,
     min_order_idr: 20000, min_order_usd: 1,
     wa_number: '62895631223200', telegram: '',
@@ -132,7 +132,7 @@ export function defaultServices() {
     { slug: 'google-play-console', name: 'Google Play Console', description: 'Pembayaran pendaftaran Google Play Console', icon: 'assets/services/google-play-console-icon-16066820-fff9-4f4c-b1ad-0c4c7883033f.png', currencies: ['USD'], presets: [p('Google Play Console', 25, 'USD')] },
     { slug: 'shopify', name: 'Shopify', description: 'Bayar toko online berbasis Shopify', icon: 'assets/services/2945149-033ca954-48c8-4d7c-8cf8-d507ef0ed7ac.webp', currencies: ['USD', 'EUR', 'GBP'], presets: [p('Custom', 0, 'USD', true)] },
     { slug: 'chatgpt', name: 'ChatGPT', description: 'Akses AI terbaik untuk produktivitas', icon: 'assets/services/chatgpt-logo-svg-9bcbeaa5-9b91-448d-8116-1ca8e762d2ae.png', currencies: ['IDR', 'USD'], presets: [p('Go', 75000, 'IDR'), p('Plus', 349000, 'IDR'), p('Pro', 1889000, 'IDR'), p('Custom', 0, 'IDR', true)] },
-    { slug: 'claude', name: 'Claude', description: 'Akses AI untuk kerja dan riset', icon: 'assets/services/claude-ai-symbol-svg-f7aaea3e-6fed-4222-b787-fd120f83196d.png', currencies: ['USD', 'EUR'], presets: [p('Pro', 22.2, 'USD'), p('Max 5X', 111, 'USD'), p('Max 20X', 222, 'USD'), p('Custom', 0, 'USD', true)] },
+    { slug: 'claude', name: 'Claude', description: 'Akses AI untuk kerja dan riset', icon: 'assets/services/claude-ai-symbol-svg-f7aaea3e-6fed-4222-b787-fd120f83196d.png', currencies: ['USD', 'EUR'], presets: [p('Pro', 22.2, 'USD'), p('Max 5X', 102, 'USD'), p('Max 20X', 204, 'USD'), p('Custom', 0, 'USD', true)] },
     { slug: 'ebay', name: 'eBay', description: 'Pembayaran tagihan belanja online di eBay, bantuan tracking paket tersedia', icon: 'assets/logos/ebay.png', currencies: ['IDR', 'USD', 'EUR', 'GBP', 'JPY'], presets: [p('Custom', 0, 'IDR', true)] },
   ];
 }
@@ -190,7 +190,8 @@ export function publicSettings(s) {
       idr_base: Number(s.fee_idr_base), idr_pct: Number(s.fee_idr_pct),
       usd_min: Number(s.fee_usd_min), usd_min_threshold: Number(s.fee_usd_min_threshold),
       usd_base: Number(s.fee_usd_base), usd_pct: Number(s.fee_usd_pct),
-      cut_pct: Number(s.fee_cut_pct) || 0,
+      cut_threshold: Number(s.fee_cut_threshold) || 0,
+      cut_flat: Number(s.fee_cut_flat) || 0,
     },
     rates,
     min_order: { IDR: Number(s.min_order_idr), USD: Number(s.min_order_usd) },
@@ -220,6 +221,14 @@ export function calcOrder(s, amount, currency) {
       : Number(s.fee_usd_base) + idr * Number(s.fee_usd_pct) / 100;
   }
   return { rate, amount_idr: Math.round(idr * 100) / 100, fee: Math.round(fee), total: Math.round(idr + fee) };
+}
+
+/** Promo: bila fee di atas ambang, potong nominal tetap. */
+export function feeAfterPromo(s, fee) {
+  const rounded = Math.round(Number(fee) || 0);
+  const threshold = Math.max(0, Number(s.fee_cut_threshold) || 0);
+  const cut = Math.max(0, Number(s.fee_cut_flat) || 0);
+  return rounded > threshold && cut > 0 ? Math.max(0, rounded - cut) : rounded;
 }
 
 // ---------- Format ----------
