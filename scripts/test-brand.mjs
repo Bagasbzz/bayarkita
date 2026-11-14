@@ -32,7 +32,7 @@ for (const file of files('public')) {
     const resolved = path.resolve(target.startsWith('/') || source.includes('<base href="/">') ? 'public' : path.dirname(file), target.replace(/^\//, ''));
     assert.ok(fs.existsSync(resolved), `Broken resource ${ref} in ${file}`);
     if (/\.(?:svg|css|js)$/.test(target)) assets.add('/' + path.relative('public', resolved).replaceAll('\\', '/') + (ref.includes('?') ? '?' + ref.split('?')[1] : ''));
-    if (/\.(?:css|js)$/.test(target)) assert.match(ref, /\?v=20261112a$/, `Stale script/style version in ${file}`);
+    if (/\.(?:css|js)$/.test(target)) assert.match(ref, /\?v=20261114a$/, `Stale script/style version in ${file}`);
   }
   if (!/[\\/](?:admin|inv)[\\/]/.test(file)) {
     const relative = path.relative('public', file).replaceAll('\\', '/');
@@ -45,6 +45,7 @@ assert.equal(pages.length, 15);
 const localeUi = fs.readFileSync('public/locale.js', 'utf8');
 const publicStyles = fs.readFileSync('public/styles.css', 'utf8');
 assert.match(localeUi, /actions\.appendChild\(cta\)/, 'Locale selector and CTA must share one navigation action row');
+assert.match(fs.readFileSync('public/script.js', 'utf8'), /Perkhidmatan\)\\s\+Pembayaran/, 'Checkout must normalize Malay service titles');
 assert.match(localeUi, /actions\.insertBefore\(label, cta \|\| null\)/, 'Locale selector must render immediately before the CTA');
 assert.match(publicStyles, /\.nav-actions\{grid-area:1\/3;/, 'Desktop navigation actions must stay in the first grid row');
 assert.match(publicStyles, /@media\(max-width:840px\)\{\.nav-actions\{grid-area:auto;/, 'Mobile navigation actions must return to the menu flow');

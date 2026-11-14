@@ -192,10 +192,12 @@
       if (idr / RATES.USD < FEE.usd_min_threshold) return FEE.usd_min;
       return FEE.usd_base + idr * FEE.usd_pct / 100;
     };
+    var serviceSlug = (location.pathname.split("/").pop() || "").replace(/\.html$/, "");
     var optionGrid = orderCard.querySelector(".service-option-grid");
     var serviceName = (document.querySelector(".service-summary-brand h1") || {}).textContent || "";
-    serviceName = serviceName.replace(/^Jasa Pembayaran\s+/i, "").trim();
-    var serviceSlug = (location.pathname.split("/").pop() || "").replace(/\.html$/, "");
+    // Judul halaman bisa sudah diterjemahkan ke Bahasa Malaysia sebelum script ini
+    // berjalan. API orders menerima nama katalog saja, misalnya "Claude".
+    serviceName = serviceName.replace(/^(?:Jasa|Layanan|Perkhidmatan)\s+Pembayaran\s+/i, "").trim();
     if (optionGrid && (serviceSlug === "claude" || serviceSlug === "chatgpt")) {
       var seatButtons = serviceSlug === "claude"
         ? '<button data-amount="257000" data-currency="IDR" data-custom="false" data-product-key="claude-team-standard" data-plan="Claude Team Standard Seat" aria-selected="false" role="tab" type="button">Team Standard Seat</button><button data-amount="812000" data-currency="IDR" data-custom="false" data-product-key="claude-team-premium" data-plan="Claude Team Premium Seat" aria-selected="false" role="tab" type="button">Team Premium Seat</button><button data-amount="5.55" data-currency="USD" data-custom="false" data-po-key="claude-pro-po-4" data-plan="Patungan Claude Pro (1/4)" aria-selected="false" role="tab" type="button">Patungan Claude Pro (1/4)</button>'
