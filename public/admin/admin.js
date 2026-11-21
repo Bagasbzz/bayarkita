@@ -549,6 +549,27 @@
 
   // ---------- Pengaturan ----------
   var feeForm = $("fee-form"), rateForm = $("rate-form"), chatForm = $("chat-form"), pwForm = $("password-form"), paymentForm = $("payment-form");
+  var qrisImage = qs('[name="qris_image"]', paymentForm), qrisImageStatus = $("qris-image-status");
+  if (qrisImage) qrisImage.addEventListener("change", function () {
+    var file = qrisImage.files && qrisImage.files[0];
+    if (!file) return;
+    if (!window.BarcodeDetector) {
+      qrisImageStatus.textContent = "Browser ini belum mendukung pembacaan QR dari gambar. Gunakan Chrome/Edge terbaru atau tempel payload QRIS secara manual.";
+      qrisImageStatus.classList.add("is-error");
+      return;
+    }
+    qrisImageStatus.textContent = "Membaca QRIS dari gambar…";
+    qrisImageStatus.classList.remove("is-error");
+    var detector = new BarcodeDetector({ formats: ["qr_code"] });
+    createImageBitmap(file).then(function (bitmap) { return detector.detect(bitmap); }).then(function (codes) {
+      if (!codes.length || !codes[0].rawValue) throw new Error("QR tidak terbaca. Pastikan gambar hanya berisi QR dan tidak buram.");
+      qs('[name="qris_payload"]', paymentForm).value = codes[0].rawValue.trim();
+      qrisImageStatus.textContent = "QR terbaca. Klik “Simpan pembayaran” untuk mengganti QRIS aktif. QR user akan tetap dibuat dinamis sesuai total invoice.";
+    }).catch(function (ex) {
+      qrisImageStatus.textContent = ex.message || "QR tidak terbaca dari gambar.";
+      qrisImageStatus.classList.add("is-error");
+    });
+  });
   var loadSettings = function () {
     api("settings").then(function (j) {
       state.settings = j.settings;

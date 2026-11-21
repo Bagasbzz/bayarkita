@@ -160,7 +160,8 @@
         <form class="admin-card admin-form" id="payment-form">
           <div class="admin-card-head"><h2>Pembayaran &amp; Invoice</h2><small>QRIS berisi total invoice secara otomatis. Penerimaan dana tetap diverifikasi manual oleh admin.</small></div>
           <label>Payload QRIS statis<textarea name="qris_payload" rows="4" maxlength="2000" spellcheck="false" placeholder="000201..."></textarea></label>
-          <p class="admin-hint">Sudah diisi dari QRIS Anda. Kosongkan untuk menonaktifkan QRIS. Nama merchant mengikuti QRIS asli.</p>
+          <label>Ganti QRIS dengan gambar<input name="qris_image" type="file" accept="image/png,image/jpeg,image/webp"></label>
+          <p class="admin-hint" id="qris-image-status">Pilih gambar QRIS yang sudah Anda crop rapat hanya bagian QR. Sistem membaca payload dari gambar lalu tetap membuat QR dinamis sesuai total invoice. Gambar tidak disimpan; yang disimpan hanya payload QRIS-nya.</p>
           <div class="admin-form-grid">
             <label>Batas total QRIS (Rp, 0 = tanpa batas)<input name="qris_max" type="number" min="0" step="1" required></label>
             <label>Masa berlaku invoice (jam)<input name="invoice_hours" type="number" min="1" max="168" step="1" required></label>
