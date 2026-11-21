@@ -116,7 +116,9 @@ try {
 }
 assert.match(prompt, /Goisiinn/);
 assert.match(prompt, /https:\/\/goisiinn\.com/);
-assert.match(prompt, /asisten virtual/);
+assert.match(prompt, /Customer Service Goisiinn/);
+assert.match(prompt, /tim operasional Goisiinn/);
+assert.doesNotMatch(prompt, /asisten virtual/);
 assert.match(prompt, /Konfirmasi Via Chat Web/);
 assert.ok(!oldBrand.test(prompt));
 assert.ok(!/Telegram @|halo@/.test(prompt));
