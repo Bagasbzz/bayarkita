@@ -4,15 +4,14 @@ export const SEAT_PRODUCTS = {
   'claude-team-standard': { service_slug: 'claude', service_name: 'Claude', plan: 'Claude Team Standard Seat', amount: 257000 },
   'claude-team-premium': { service_slug: 'claude', service_name: 'Claude', plan: 'Claude Team Premium Seat', amount: 812000 },
   'chatgpt-business-standard': { service_slug: 'chatgpt', service_name: 'ChatGPT', plan: 'ChatGPT Business Standard Seat', amount: 73000 },
-  'chatgpt-business-premium': { service_slug: 'chatgpt', service_name: 'ChatGPT', plan: 'ChatGPT Business Premium Seat', amount: 316000 },
+  'chatgpt-business-premium': { service_slug: 'chatgpt', service_name: 'ChatGPT', plan: 'ChatGPT Business Premium Seat', amount: 243000 },
 };
 
 // Patungan paket umum per peserta; 4 pembeli membiayai 1 paket untuk 4 pengguna.
 export const PO_PRODUCTS = {
-  // Derived from the existing public plan presets: Claude Pro $22.20 / 4,
-  // ChatGPT Plus Rp349.000 / 4. Patungan adds a Rp5.000 participant fee.
+  // Patungan uses one shared account for four participants and adds a Rp5.000 participant fee.
   'claude-pro-po-4': { service_slug: 'claude', service_name: 'Claude', plan: 'Patungan Claude Pro (1/4)', amount: 5.55, currency: 'USD', full_price: 22.2 },
-  'chatgpt-plus-po-4': { service_slug: 'chatgpt', service_name: 'ChatGPT', plan: 'Patungan ChatGPT Plus (1/4)', amount: 87250, currency: 'IDR', full_price: 349000 },
+  'chatgpt-plus-po-4': { service_slug: 'chatgpt', service_name: 'ChatGPT', plan: 'Patungan ChatGPT Plus (1/4)', amount: 71250, currency: 'IDR', full_price: 285000 },
 };
 
 export function getSeatProduct(key) {
