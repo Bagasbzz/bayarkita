@@ -205,7 +205,7 @@
       var customTab = optionGrid.querySelector('[data-custom="true"]');
       if (customTab) {
         customTab.insertAdjacentHTML("beforebegin", seatButtons);
-        optionGrid.insertAdjacentHTML("afterend", '<section class="service-product-help" aria-live="polite" hidden><h3></h3><p></p><details><summary>Info selengkapnya</summary><div></div></details></section>');
+        optionGrid.insertAdjacentHTML("afterend", '<section class="service-product-help" aria-live="polite" hidden><h3></h3><p></p><details open><summary>Info selengkapnya</summary><div></div></details></section>');
       }
     }
     var tabs = Array.prototype.slice.call(orderCard.querySelectorAll(".service-option-grid button"));
@@ -275,17 +275,20 @@
     var state = { amount: 0, currency: "IDR", plan: "", productKey: "", poKey: "" };
     var productHelp = orderCard.querySelector(".service-product-help");
     var productHelpCopy = {
-      "claude-team-standard": ["Claude Team Standard Seat", "Seat Business khusus untuk satu pengguna, dengan undangan ke email Anda. Tidak ada fee seat.", "Masukkan email yang bisa menerima undangan Claude. Seat ini bukan bagian dari patungan dan tidak menunggu peserta lain. Harga yang ditampilkan adalah harga seat; total bayar tetap mengikuti ringkasan checkout."],
-      "claude-team-premium": ["Claude Team Premium Seat", "Seat Business Premium khusus untuk satu pengguna, dengan undangan ke email Anda. Tidak ada fee seat.", "Masukkan email yang bisa menerima undangan Claude. Seat ini bukan bagian dari patungan dan tidak menunggu peserta lain. Harga yang ditampilkan adalah harga seat; total bayar tetap mengikuti ringkasan checkout."],
+      "claude-team-standard": ["Claude Team Standard Seat", "Akun Claude resmi dan legal dari Business Goisiinn. Admin mengundang email Anda ke seat khusus; aktif tepat 1 bulan dan limitnya 1,25× Claude Pro.", "Cocok untuk 1 orang dan bukan patungan. Masukkan email yang bisa menerima undangan. Bisa dipakai di web, aplikasi resmi, Claude Code CLI, Cowork, MCP/konektor resmi, dan project pribadi. Dilarang VPN/proxy/WARP, VPS/RDP/cloud, token injection, bot agent, prompt bersamaan, loop 24/7, scraping massal, malware, atau hacking. Pelanggaran = kick permanen tanpa refund."],
+      "claude-team-premium": ["Claude Team Premium Seat", "Akun Claude resmi dan legal dari Business Goisiinn. Admin mengundang email Anda ke seat khusus; aktif tepat 1 bulan dan limitnya 6,25× Claude Pro.", "Cocok untuk 1 orang dan bukan patungan. Masukkan email yang bisa menerima undangan. Bisa dipakai di web, aplikasi resmi, Claude Code CLI, Cowork, MCP/konektor resmi, dan project pribadi. Dilarang VPN/proxy/WARP, VPS/RDP/cloud, token injection, bot agent, prompt bersamaan, loop 24/7, scraping massal, malware, atau hacking. SSH Tailscale hanya ke laptop rumah tanpa Exit Node VPS. Pelanggaran = kick permanen tanpa refund."],
       "chatgpt-business-standard": ["ChatGPT Business Standard Seat", "Akun resmi dan legal dari Business Goisiinn. Admin mengundang email Anda ke seat khusus; setara ChatGPT Go. Aktif tepat 1 bulan dan harga Rp73.000.", "Masukkan email yang bisa menerima undangan. Seat ini dipakai satu orang, bukan patungan, dan tidak menunggu peserta lain. Admin mengaitkan akses ke akun yang Anda berikan; jangan bagikan undangan atau kata sandi."],
       "chatgpt-business-premium": ["ChatGPT Business Premium Seat", "Akun resmi dan legal dari Business Goisiinn. Admin mengundang email Anda ke seat khusus; setara ChatGPT Pro. Aktif tepat 1 bulan dan harga promo Rp243.000.", "Masukkan email yang bisa menerima undangan. Seat ini dipakai satu orang, bukan patungan, dan tidak menunggu peserta lain. Admin mengaitkan akses ke akun yang Anda berikan; jangan bagikan undangan atau kata sandi."],
-      "claude-pro-po-4": ["Patungan Claude Pro (1 dari 4 peserta)", "Anda memesan satu slot patungan untuk satu paket Claude Pro yang digunakan bersama oleh empat peserta. Biaya layanan patungan Rp5.000 per peserta.", "Pesanan akan membuka grup patungan baru atau bergabung ke grup Claude Pro yang masih mengumpulkan peserta. Proses dimulai setelah empat peserta terdaftar dan pembayaran mereka dikonfirmasi; batas pengumpulan maksimal tujuh hari sejak grup dibuka. Harga paket per peserta dihitung dari harga paket umum lalu dikonversi ke rupiah. Total akhir terlihat di ringkasan checkout. Daftar peserta yang pembayarannya sudah tercatat hanya dapat dilihat peserta grup yang sudah membayar."],
+      "claude-pro-po-4": ["Patungan Claude Pro (1 dari 4 peserta)", "Akun Claude Pro resmi dan legal, aktif tepat 1 bulan. Satu akun yang sama dipakai bersama oleh 4 peserta; akses dibagikan setelah grup lengkap.", "Masukkan email dan nomor yang bisa dihubungi. Admin membayar melalui akun pembayaran admin setelah 4 peserta lengkap; grup menunggu maksimal 7 hari. Harga dasar per peserta USD5,55 + fee layanan Rp5.000. Jangan ubah password, memakai VPN/proxy, login ke VPS, atau memakai akun secara bersamaan."],
       "chatgpt-plus-po-4": ["Patungan ChatGPT Plus (1 dari 4 peserta)", "Akun ChatGPT Plus resmi dan legal, aktif tepat 1 bulan. Satu akun yang sama dipakai bersama oleh 4 peserta; akses dibagikan setelah pembayaran grup lengkap. Harga promo hanya berlaku di Goisiinn.", "Masukkan email yang bisa dihubungi. Untuk paket patungan, kirim link pembayaran/checkout lalu admin membayar lewat akun pembayaran admin; bisa memakai email baru atau email yang sudah pernah berlangganan. Harga dasar per peserta Rp71.250 + fee Rp5.000, total Rp76.250. Jangan gunakan bersamaan di dua perangkat dan jangan ubah kata sandi akun bersama."]
     };
     var updateProductHelp = function () {
       if (!productHelp) return;
       var key = state.productKey || state.poKey;
       var copy = productHelpCopy[key];
+      if (!copy && state.plan) {
+        copy = [state.plan, "Paket resmi Goisiinn dengan masa aktif tepat 1 bulan. Total akhir dan biaya layanan ditampilkan transparan di bawah pilihan paket.", "Untuk paket umum, kirim link pembayaran/checkout dan admin membayar melalui akun pembayaran admin. Bisa memakai email baru atau email yang sudah pernah berlangganan. Pastikan data pemesan benar sebelum checkout."];
+      }
       productHelp.hidden = !copy;
       if (!copy) return;
       productHelp.querySelector("h3").textContent = copy[0];

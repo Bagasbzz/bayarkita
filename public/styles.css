@@ -752,7 +752,8 @@ button, input, textarea, select { font: inherit; }
 .service-product-help{color:#374151;background:#fffaf5;border:1px solid #fed7aa;border-radius:10px;margin-top:12px;padding:12px 14px}
 .service-product-help[hidden]{display:none}
 .service-product-help h3{color:#111827;margin:0;font-size:14px;font-weight:850}
-.service-product-help p,.service-product-help details div{color:#4b5563;margin:6px 0 0;font-size:13px;line-height:1.6}
+.service-product-help p,.service-product-help details div{color:#4b5563;white-space:pre-line;margin:8px 0 0;font-size:13px;line-height:1.65}
+.service-product-help details div{border-top:1px solid #fed7aa;margin-top:10px;padding-top:10px}
 .service-product-help summary{color:var(--red);cursor:pointer;margin-top:7px;font-size:12px;font-weight:800}
 .service-related-card{border:1px solid var(--border);background:#fff;border-radius:16px;margin-top:18px;padding:24px;box-shadow:0 10px 24px #1118270d}
 .service-seo-card{border:1px solid var(--border);background:radial-gradient(circle at 100% 0,#f9731612,#0000 260px),#fff;border-radius:16px;margin-top:18px;padding:28px;box-shadow:0 10px 24px #1118270d}
@@ -1165,6 +1166,11 @@ to{transform:translate(-50%)}
 .service-summary-metrics svg{width:28px;height:28px;padding:6px}
 .service-summary-metrics span{white-space:nowrap;margin-bottom:4px;font-size:10px;line-height:1.1}
 .service-info-card,.service-order-card{padding:18px}
+.service-order-card{gap:0}
+.service-product-help{margin-top:12px;padding:14px}
+.service-product-help h3{font-size:15px;line-height:1.35}
+.service-product-help p,.service-product-help details div{font-size:14px;line-height:1.65}
+.service-product-help summary{font-size:13px;padding:4px 0}
 .service-order-fields{grid-template-columns:1fr}
 .faq-hero,.faq-hero-inner{min-height:560px}
 .faq-hero h1{font-size:34px}
